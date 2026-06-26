@@ -53,15 +53,14 @@
   .sync .led{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
 
   /* ---- mode toggle ---- */
-  .toggle{display:flex;gap:28px;}
-  .toggle button{border:none;background:none;padding:0 0 13px;font-family:var(--font);font-weight:700;
-    font-size:15.5px;letter-spacing:.2px;color:var(--grey-light);cursor:pointer;position:relative;display:flex;align-items:center;gap:8px;text-transform:uppercase;transition:color .15s;}
-  .toggle button.active{color:var(--black);font-weight:900;}
-  .toggle button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:4px;background:var(--teal);border-radius:2px;
-    transform:scaleX(0);transition:transform .24s cubic-bezier(.32,.72,0,1);transform-origin:left;}
-  .toggle button.active::after{transform:scaleX(1);}
+  .toggle{display:flex;gap:10px;}
+  .toggle button{border:none;background:var(--card-light);padding:11px 18px;border-radius:999px;font-family:var(--font);font-weight:800;
+    font-size:13.5px;letter-spacing:.4px;color:var(--grey);cursor:pointer;display:flex;align-items:center;gap:8px;text-transform:uppercase;transition:all .18s;}
+  .toggle button.active{background:var(--teal);color:var(--white);font-weight:900;box-shadow:0 5px 16px rgba(54,179,175,.40);}
+  .toggle button:not(.active):active{background:var(--fog);}
   .toggle .tcount{font-size:11px;font-weight:800;color:var(--white);background:var(--need);min-width:19px;height:19px;
     padding:0 6px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;}
+  .toggle button.active .tcount{background:var(--white);color:var(--need);}
 
   /* ---- needs-list filter: text chips ---- */
   .chips{display:flex;gap:20px;overflow-x:auto;padding:16px 0 4px;scrollbar-width:none;}
@@ -620,19 +619,31 @@ async function seedIfEmpty(){
   });
   await batch.commit();
 }
-let unsubSnap=null;
+let unsubSnap=null, offlineTimer=null;
+/* Decide the sync badge from a snapshot's metadata.
+   A live server snapshot => SYNCED immediately. A cache-only snapshot (e.g. the
+   split-second your own edit is in flight, or a real disconnect) doesn't cry
+   "Offline" right away — we wait a few seconds for the server to confirm first,
+   so making an edit no longer leaves the badge stuck on OFFLINE. */
+function syncFromSnap(meta){
+  if(!meta.fromCache){ clearTimeout(offlineTimer); offlineTimer=null; setSync('online'); }
+  else if(!offlineTimer){ offlineTimer=setTimeout(()=>{ offlineTimer=null; setSync('offline'); }, 4000); }
+}
 function startFirebaseSync(){
   if(unsubSnap) return;                    // already listening
   const { db, fs } = window.PantryFB;
   const col = fs.collection(db,'items');
-  unsubSnap = fs.onSnapshot(col,
+  // includeMetadataChanges so the listener also fires when the server CONFIRMS a
+  // local edit (otherwise the badge sticks on OFFLINE on the device that made it).
+  unsubSnap = fs.onSnapshot(col, { includeMetadataChanges:true },
     snap=>{ items = snap.docs.map(d=>({ id:d.id, ...d.data() })); synced=true;
-            setSync(snap.metadata.fromCache ? 'offline' : 'online'); refresh(); },
-    err=>{ console.error('snapshot error', err); setSync('offline');
+            syncFromSnap(snap.metadata);
+            if(snap.docChanges().length) refresh(); },   // skip re-render on metadata-only updates
+    err=>{ console.error('snapshot error', err); clearTimeout(offlineTimer); offlineTimer=null; setSync('offline');
            if(!synced){ showBanner('error',"Signed in, but couldn't load the list — make sure the Firestore rules are published (SETUP.md)."); } }
   );
 }
-function stopFirebaseSync(){ if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubSnap=null; } }
+function stopFirebaseSync(){ if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubSnap=null; } clearTimeout(offlineTimer); offlineTimer=null; }
 /* ---- access control: only these Google accounts can open the shared list ----
    This is the friendly in-app gate; the REAL enforcement lives in firestore.rules,
    which lists the same emails. To add/remove a person, change BOTH places. */

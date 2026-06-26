@@ -1115,7 +1115,22 @@ setMode(mode);
       let db;
       try{ db = fs.initializeFirestore(app, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) }); }
       catch(e){ console.warn('Offline cache unavailable; using in-memory cache.', e); db = fs.getFirestore(app); }
-      window.PantryFB = { db, fs, auth: a.getAuth(app), authFns: {
+      // Stay signed in indefinitely: IndexedDB persistence survives browser/app
+      // restarts and resists Safari's storage eviction far better than localStorage,
+      // so Chris & Carmyn don't get logged out. The popup/redirect resolver MUST be
+      // passed to initializeAuth or Google sign-in (popup + mobile redirect) breaks.
+      let auth;
+      try{
+        auth = a.initializeAuth(app, {
+          persistence: [a.indexedDBLocalPersistence, a.browserLocalPersistence],
+          popupRedirectResolver: a.browserPopupRedirectResolver
+        });
+      }catch(e){
+        console.warn('initializeAuth failed; falling back to getAuth.', e);
+        auth = a.getAuth(app);
+        try{ await a.setPersistence(auth, a.indexedDBLocalPersistence); }catch(_){}
+      }
+      window.PantryFB = { db, fs, auth, authFns: {
         GoogleAuthProvider: a.GoogleAuthProvider, signInWithPopup: a.signInWithPopup,
         signInWithRedirect: a.signInWithRedirect, getRedirectResult: a.getRedirectResult,
         onAuthStateChanged: a.onAuthStateChanged, signOut: a.signOut } };

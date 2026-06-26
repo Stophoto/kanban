@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Kanban security rules — one shared "items" collection for a single household.
+// Publish these in the Firebase console: Firestore Database → Rules → Publish.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only Chris's and Carmyn's Google accounts can read or write the list.
+    // This is the real lock — even if someone reached the app, Firestore rejects
+    // them here. Keep this list identical to ALLOWED in index.html: to add or
+    // remove a person, change BOTH places, then re-publish these rules.
+    match /items/{itemId} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
+    }
+
+    // Everything else is denied by default.
+  }
+}

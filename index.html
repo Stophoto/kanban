@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-title" content="Kanban">
+<meta name="description" content="Household replenishment list for Chris & Carmyn">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<title>Kanban</title>
+<style>
+  :root{
+    /* Fratello palette */
+    --black:#1A1A1A; --white:#FFFFFF; --cream:#F6F1E9; --teal:#36B3AF; --teal-bright:#00D4C8;
+    --slate:#4A4A4A; --grey:#908F8A; --grey-light:#C4C3C0; --fog:#E8E4DE;
+    --divider:#E0E0E0; --card-light:#F5F0E8;
+    --teal-tint:#E4F4F3; --teal-tint2:#D5EEEC;
+    --need:#C2502F; --need-tint:#F6E9E4;
+    --bg:#FFFFFF; --surface:#FFFFFF;
+    --radius:14px; --radius-lg:18px;
+    --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+    --font:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);color:var(--black);font-family:var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
+  body{padding-top:var(--safe-top);min-height:100vh;}
+  .app{max-width:480px;margin:0 auto;padding:0 20px 170px;}
+
+  /* ---- header ---- */
+  header{position:sticky;top:0;z-index:40;background:var(--white);
+    padding:calc(14px + var(--safe-top)) 0 0;margin-top:calc(-1 * var(--safe-top));border-bottom:1px solid var(--divider);}
+  .h-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .wordmark{font-family:var(--font);font-weight:900;font-size:25px;letter-spacing:-1px;color:var(--black);text-transform:uppercase;}
+  .wordmark .dot{color:var(--teal);}
+  .sync{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--grey);font-weight:700;letter-spacing:1.4px;text-transform:uppercase;}
+  .sync .led{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
+
+  /* ---- mode toggle ---- */
+  .toggle{display:flex;gap:28px;}
+  .toggle button{border:none;background:none;padding:0 0 13px;font-family:var(--font);font-weight:700;
+    font-size:15px;letter-spacing:.2px;color:var(--grey);cursor:pointer;position:relative;display:flex;align-items:center;gap:8px;text-transform:uppercase;}
+  .toggle button.active{color:var(--black);}
+  .toggle button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--teal);
+    transform:scaleX(0);transition:transform .24s cubic-bezier(.32,.72,0,1);transform-origin:left;}
+  .toggle button.active::after{transform:scaleX(1);}
+  .toggle .tcount{font-size:11px;font-weight:800;color:var(--white);background:var(--need);min-width:19px;height:19px;
+    padding:0 6px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;}
+
+  /* ---- needs-list filter: text chips ---- */
+  .chips{display:flex;gap:20px;overflow-x:auto;padding:16px 0 4px;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{flex-shrink:0;font-size:12px;font-weight:700;color:var(--grey);cursor:pointer;white-space:nowrap;padding:2px 0 7px;
+    position:relative;letter-spacing:.6px;text-transform:uppercase;transition:color .15s;}
+  .chip.sel{color:var(--black);}
+  .chip.sel::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2.5px;background:var(--teal);}
+
+  .view{display:none;} .view.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+
+  /* ---- STORE header (in 'all' view) — eyebrow style ---- */
+  .store-h{display:flex;align-items:baseline;gap:10px;margin:30px 0 4px;}
+  .store-h .sh-name{font-family:var(--font);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);}
+  .store-h .sh-count{font-size:11px;font-weight:700;color:var(--grey);margin-left:auto;letter-spacing:.5px;}
+
+  /* ---- DEPARTMENT header — bold black + teal underline rule (hub style) ---- */
+  .deptbar{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;cursor:pointer;
+    padding:20px 0 11px;border-bottom:2.5px solid var(--teal);margin-top:6px;}
+  .deptbar .db-name{font-family:var(--font);font-weight:800;font-size:20px;letter-spacing:-.3px;color:var(--black);}
+  .deptbar .db-count{font-size:12px;font-weight:700;color:var(--grey);letter-spacing:.5px;}
+  .deptbar .db-chev{width:18px;height:18px;color:var(--teal);margin-left:auto;transition:transform .24s cubic-bezier(.32,.72,0,1);}
+  .deptbar.collapsed .db-chev{transform:rotate(-90deg);}
+  .dept-items{overflow:hidden;transition:max-height .28s cubic-bezier(.32,.72,0,1),opacity .2s;}
+  .dept-items.collapsed{max-height:0 !important;opacity:0;}
+
+  /* ---- item ROW — clean list, hairline divider ---- */
+  .row{display:flex;align-items:center;gap:14px;padding:15px 2px;cursor:pointer;position:relative;
+    border-bottom:1px solid var(--divider);transition:background .12s;}
+  .row:active{background:var(--cream);}
+  .row.added{opacity:.5;}
+  .row.checked .r-name{color:var(--grey-light);text-decoration:line-through;}
+
+  .r-body{flex:1;min-width:0;}
+  .r-name{font-size:16px;font-weight:600;letter-spacing:-.1px;line-height:1.3;color:var(--black);}
+  .r-detail{font-size:12.5px;color:var(--grey);margin-top:2px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .r-note{font-size:12.5px;color:var(--teal);margin-top:3px;font-weight:600;display:flex;align-items:center;gap:5px;}
+  .r-note svg{width:12px;height:12px;flex-shrink:0;}
+
+  /* route tag — teal-tinted lozenge (hub "LIVE" style) for info-bearing tags only */
+  .r-tag{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;border-radius:6px;
+    display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;}
+  .r-tag svg{width:10px;height:10px;}
+  .r-tag.locked{background:var(--need-tint);color:var(--need);}
+  .r-tag.wait{background:var(--teal-tint);color:var(--teal);}
+  .r-tag.anywhere{background:var(--fog);color:var(--slate);}
+
+  /* catalog add control — clear circle that fills SOLID teal when on list */
+  .r-add{width:30px;height:30px;border-radius:50%;border:2px solid var(--grey-light);flex-shrink:0;display:flex;
+    align-items:center;justify-content:center;color:var(--grey);transition:all .16s;background:var(--white);}
+  .r-add svg{width:16px;height:16px;}
+  .row:active .r-add{border-color:var(--teal);color:var(--teal);}
+  .r-add.done{background:var(--teal);border-color:var(--teal);color:var(--white);box-shadow:0 0 0 4px var(--teal-tint);}
+  .r-add.done svg{width:17px;height:17px;stroke-width:3.4;}
+
+  /* shopping list check — bold, obvious */
+  .r-check{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--grey-light);flex-shrink:0;display:flex;
+    align-items:center;justify-content:center;transition:all .15s;background:var(--white);}
+  .r-check svg{width:15px;height:15px;opacity:0;transform:scale(.5);transition:all .15s;color:var(--white);stroke-width:3.4;}
+  .row.checked .r-check{background:var(--teal);border-color:var(--teal);}
+  .row.checked .r-check svg{opacity:1;transform:scale(1);}
+
+  /* QTY badge on shopping list — shows how many to BUY, prominent */
+  .qty-badge{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-width:42px;height:42px;border-radius:11px;background:var(--teal-tint);padding:0 8px;}
+  .qty-badge .qb-num{font-size:18px;font-weight:800;color:var(--teal);line-height:1;letter-spacing:-.5px;}
+  .qty-badge .qb-lbl{font-size:7.5px;font-weight:800;color:var(--teal);letter-spacing:.8px;text-transform:uppercase;margin-top:1px;opacity:.75;}
+
+  /* "or grab here anyway" divider inside dept */
+  .or-line{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey);
+    padding:16px 2px 6px;display:flex;align-items:center;gap:10px;}
+  .or-line::before,.or-line::after{content:"";flex:1;height:1px;background:var(--divider);}
+
+  /* empty */
+  .empty{text-align:center;padding:64px 30px;color:var(--grey);}
+  .empty .e-ico{width:44px;height:44px;margin:0 auto 18px;opacity:.4;color:var(--teal);}
+  .empty p{font-size:15px;line-height:1.6;font-weight:500;color:var(--slate);}
+  .empty .e-strong{color:var(--black);font-weight:700;}
+  .empty .e-btn{display:inline-block;margin-top:20px;color:var(--white);background:var(--black);font-weight:700;font-size:13px;
+    letter-spacing:.6px;text-transform:uppercase;font-family:var(--font);cursor:pointer;padding:13px 24px;border-radius:11px;}
+
+  .collapse-all{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:var(--teal);
+    cursor:pointer;padding:6px 0;margin:8px 2px 0;letter-spacing:.8px;text-transform:uppercase;}
+  .collapse-all svg{width:13px;height:13px;}
+
+  /* ---- floating search dock ---- */
+  .searchdock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + var(--safe-bottom));z-index:50;
+    width:calc(100% - 40px);max-width:440px;display:flex;align-items:center;gap:11px;background:var(--black);color:var(--white);
+    border-radius:30px;height:56px;padding:0 9px 0 20px;box-shadow:0 10px 32px rgba(26,26,26,.3);cursor:text;}
+  .searchdock svg.sd-ico{width:19px;height:19px;color:var(--teal);flex-shrink:0;}
+  .searchdock input{flex:1;border:none;background:none;color:var(--white);font-size:15.5px;font-weight:500;font-family:var(--font);outline:none;height:100%;}
+  .searchdock input::placeholder{color:rgba(255,255,255,.55);font-weight:500;}
+  .searchdock .sd-add{width:40px;height:40px;border-radius:50%;background:var(--teal);border:none;color:var(--white);
+    cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0;}
+  .searchdock .sd-add svg{width:21px;height:21px;}
+  .searchdock.has-text .sd-add{display:flex;}
+  .searchdock .sd-clear{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.14);border:none;color:var(--white);
+    cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;}
+  .searchdock.has-text .sd-clear{display:flex;}
+  .searchdock .sd-new{display:flex;align-items:center;gap:6px;height:40px;padding:0 15px 0 12px;border-radius:20px;
+    background:var(--teal);border:none;color:var(--white);cursor:pointer;flex-shrink:0;font-family:var(--font);
+    font-weight:800;font-size:11px;letter-spacing:.8px;text-transform:uppercase;}
+  .searchdock .sd-new svg{width:17px;height:17px;}
+  .searchdock.has-text .sd-new{display:none;}
+
+  /* search results overlay */
+  .results{position:fixed;inset:0;z-index:48;background:var(--white);padding:calc(16px + var(--safe-top)) 20px 100px;overflow-y:auto;display:none;}
+  .results.open{display:block;}
+  .results h3{font-family:var(--font);font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin:8px 2px 4px;}
+  .res-done{font-family:var(--font);font-weight:800;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--black);cursor:pointer;padding:8px;}
+
+  /* sheet (add/edit) */
+  .scrim{position:fixed;inset:0;background:rgba(26,26,26,.4);z-index:60;opacity:0;pointer-events:none;
+    transition:opacity .25s;backdrop-filter:blur(2px);}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--white);border-radius:24px 24px 0 0;
+    padding:8px 22px calc(26px + var(--safe-bottom));max-width:480px;margin:0 auto;transform:translateY(102%);
+    transition:transform .34s cubic-bezier(.32,.72,0,1);max-height:94vh;overflow-y:auto;}
+  .sheet.open{transform:translateY(0);}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--divider);margin:8px auto 18px;}
+  .sheet h2{font-family:var(--font);font-weight:800;font-size:23px;letter-spacing:-.5px;margin-bottom:3px;color:var(--black);}
+  .sheet .sub{font-size:13px;color:var(--grey);margin-bottom:22px;font-weight:500;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--grey);margin-bottom:9px;}
+  .field label .opt-lbl{text-transform:none;font-weight:500;color:var(--grey-light);letter-spacing:0;}
+  .field input[type=text]{width:100%;background:var(--white);border:1.5px solid var(--divider);border-radius:12px;
+    padding:14px;font-size:16px;font-family:var(--font);font-weight:500;color:var(--black);outline:none;transition:border .15s;}
+  .field input:focus{border-color:var(--teal);}
+  .seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .seg .opt{flex:1;min-width:max-content;background:var(--white);border:1.5px solid var(--divider);border-radius:11px;
+    padding:12px 8px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;color:var(--slate);letter-spacing:.3px;
+    display:flex;align-items:center;justify-content:center;gap:5px;transition:all .14s;text-transform:uppercase;}
+  .seg .opt svg{width:14px;height:14px;}
+  .seg .opt.sel{background:var(--teal);border-color:var(--teal);color:var(--white);}
+  .qty-edit{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1.5px solid var(--divider);border-radius:12px;padding:10px 14px;}
+  .qty-edit .qe-txt{font-size:14.5px;font-weight:600;color:var(--slate);}
+  .stepper{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+  .stepper button{width:34px;height:34px;border:1.5px solid var(--divider);background:var(--white);color:var(--black);font-size:20px;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;border-radius:9px;}
+  .stepper button:active{background:var(--teal);border-color:var(--teal);color:var(--white);}
+  .stepper .sv{min-width:30px;text-align:center;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--black);}
+  .routing-help{font-size:12px;color:var(--grey);line-height:1.5;margin-top:9px;padding-left:2px;font-weight:500;}
+  .save{width:100%;background:var(--black);color:var(--white);border:none;border-radius:13px;padding:17px;font-size:13px;
+    font-weight:800;font-family:var(--font);cursor:pointer;margin-top:10px;letter-spacing:1px;text-transform:uppercase;}
+  .save:active{opacity:.9;} .save.ghost{background:none;color:var(--need);margin-top:4px;padding:13px;}
+
+  .toast{position:fixed;bottom:calc(96px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(12px);
+    background:var(--black);color:var(--white);padding:13px 20px;border-radius:13px;font-size:13.5px;font-weight:600;z-index:80;
+    opacity:0;pointer-events:none;transition:all .25s;box-shadow:0 8px 24px rgba(0,0,0,.24);white-space:nowrap;max-width:90vw;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast .undo{color:var(--teal-bright);font-weight:800;margin-left:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;}
+
+  /* ---- sync indicator states ---- */
+  .sync.local .led{background:var(--grey);box-shadow:0 0 0 3px var(--fog);}
+  .sync.offline{color:var(--need);}
+  .sync.offline .led{background:var(--need);box-shadow:0 0 0 3px var(--need-tint);}
+
+  /* ---- status banner (setup / offline notices) ---- */
+  .banner{display:flex;align-items:flex-start;gap:12px;background:var(--cream);color:var(--slate);
+    font-size:12.5px;font-weight:600;line-height:1.45;padding:11px 14px;border-radius:var(--radius);margin:14px 0 0;}
+  .banner.err{background:var(--need-tint);color:var(--need);}
+  .banner .b-msg{flex:1;}
+  .banner .b-msg a{color:inherit;font-weight:800;text-decoration:underline;}
+  .banner .b-x{flex-shrink:0;cursor:pointer;font-weight:800;font-size:16px;line-height:1;opacity:.55;padding:0 2px;background:none;border:none;color:inherit;}
+
+  /* ---- loading state (before first data arrives) ---- */
+  .loading{text-align:center;padding:60px 30px;color:var(--grey);font-size:13px;font-weight:600;letter-spacing:.3px;}
+  .loading .l-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);margin:0 3px;
+    animation:lpulse 1s infinite ease-in-out;}
+  .loading .l-dot:nth-child(2){animation-delay:.15s;} .loading .l-dot:nth-child(3){animation-delay:.3s;}
+  @keyframes lpulse{0%,100%{opacity:.25;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}
+  @media (prefers-reduced-motion: reduce){ .loading .l-dot{animation:none;} }
+
+  /* ---- auth gate (Google sign-in) ---- */
+  .authgate{position:fixed;inset:0;z-index:200;background:var(--white);display:flex;align-items:center;justify-content:center;
+    padding:30px calc(30px + var(--safe-bottom));}
+  .authgate[hidden]{display:none;}
+  .ag-card{width:100%;max-width:330px;text-align:center;}
+  .ag-mark{font-family:var(--font);font-weight:900;font-size:34px;letter-spacing:-1.5px;text-transform:uppercase;color:var(--black);}
+  .ag-mark .dot{color:var(--teal);}
+  .ag-sub{margin:12px 0 28px;color:var(--slate);font-size:14.5px;font-weight:500;line-height:1.5;}
+  .ag-btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:54px;background:var(--black);
+    color:var(--white);border:none;border-radius:30px;font-family:var(--font);font-weight:800;font-size:13px;letter-spacing:.7px;
+    text-transform:uppercase;cursor:pointer;padding:0 18px;}
+  .ag-btn:disabled{opacity:.55;cursor:default;}
+  .ag-btn svg{width:18px;height:18px;flex-shrink:0;}
+  .ag-note{margin-top:18px;color:var(--grey);font-size:12.5px;font-weight:500;line-height:1.55;}
+  .ag-note strong{color:var(--slate);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="h-row">
+      <div class="wordmark">Kanban<span class="dot">.</span></div>
+      <div class="sync" onclick="syncTap()" title="Tap to sign out"><span class="led"></span>SYNCED</div>
+    </div>
+    <div class="toggle" id="toggle">
+      <button id="tabCatalog" class="active" onclick="setMode('catalog')">Needs list</button>
+      <button id="tabList" onclick="setMode('list')">Shopping list <span class="tcount" id="listCount">0</span></button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div id="catalogView" class="view active">
+    <div id="catBody"></div>
+  </div>
+
+  <div id="listView" class="view">
+    <div id="listBody"></div>
+  </div>
+</div>
+
+<!-- floating search dock, thumb height -->
+<div class="searchdock" id="searchdock" onclick="focusSearch(event)">
+  <svg class="sd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+  <input type="text" id="globalSearch" placeholder="Find an item" autocomplete="off" oninput="onSearch()" onfocus="openResults()">
+  <button class="sd-add" id="sdAdd" onclick="addNewFromSearch(event)" title="Add as new"><span id="sdAddIco"></span></button>
+  <button class="sd-clear" id="sdClear" onclick="clearSearch(event)">&times;</button>
+  <button class="sd-new" id="sdNew" onclick="openAddNew(event)" title="Add a new product"><span id="sdNewIco"></span><span class="sd-new-lbl">New</span></button>
+</div>
+
+<!-- search results overlay -->
+<div class="results" id="results">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+    <h3 id="resHead" style="margin:8px 2px 4px;">Results</h3>
+    <div onclick="closeResults()" style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);cursor:pointer;padding:8px;">Done</div>
+  </div>
+  <div id="resBody"></div>
+</div>
+
+<div class="scrim" id="scrim" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h2 id="sheetTitle">New item</h2>
+  <div class="sub" id="sheetSub">Add something to your needs list</div>
+  <div class="field"><label>Item name</label>
+    <input type="text" id="fName" placeholder="e.g. Peanut butter" autocomplete="off"></div>
+  <div class="field"><label>Store / section</label><div class="seg" id="fStore"></div></div>
+  <div class="field"><label>Where can you buy it?</label><div class="seg" id="fRouting"></div>
+    <div class="routing-help" id="routingHelp"></div></div>
+  <div class="field"><label>Buy how many each time?</label>
+    <div class="qty-edit"><span class="qe-txt">Quantity to buy</span>
+      <div class="stepper"><button onclick="bumpQty(-1)">&minus;</button><span class="sv" id="fQty">1</span><button onclick="bumpQty(1)">+</button></div>
+    </div></div>
+  <div class="field"><label>Detail / brand <span class="opt-lbl">&mdash; optional</span></label>
+    <input type="text" id="fDetail" placeholder="e.g. Tres Extra Hold, level 4" autocomplete="off"></div>
+  <div class="field"><label>Note for shopping <span class="opt-lbl">&mdash; optional</span></label>
+    <input type="text" id="fNote" placeholder="e.g. check the back shelf, get the big one" autocomplete="off"></div>
+  <div class="field" id="destField" style="display:none;"><label>Add it to</label>
+    <div class="seg" id="fDest">
+      <div class="opt sel" data-dest="needs" onclick="pickDest('needs')">Needs list</div>
+      <div class="opt" data-dest="shopping" onclick="pickDest('shopping')">Shopping list now</div>
+    </div></div>
+  <button class="save" id="listToggleBtn" onclick="listToggleFromSheet()" style="display:none;">Add to shopping list</button>
+  <button class="save" id="saveBtn" onclick="saveItem()">Save to needs list</button>
+  <button class="save ghost" id="deleteBtn" onclick="deleteItem()" style="display:none;">Delete from needs list</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Google sign-in gate. Shown only when Firebase is configured; covers the app until
+     an allowed account is signed in. The real lock is in firestore.rules. -->
+<div class="authgate" id="authgate" hidden>
+  <div class="ag-card">
+    <div class="ag-mark">Kanban<span class="dot">.</span></div>
+    <div class="ag-sub" id="agSub">A private list for Chris &amp; Carmyn. Sign in to continue.</div>
+    <button class="ag-btn" id="authBtn" onclick="signInGoogle()">Continue with Google</button>
+    <div class="ag-note" id="agNote"></div>
+  </div>
+</div>
+
+<script>
+const ICON = {
+  grocery:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.5 13h11l2-9H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>',
+  costco:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M3 9v6l9 5 9-5V9"/><path d="M12 14v6"/></svg>',
+  liquor:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3v5a3 3 0 0 0 6 0V3M12 11v7M9 21h6"/></svg>',
+  shoppers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5l-7 7a3 3 0 0 0 0 4l5.5 5.5a3 3 0 0 0 4 0l7-7V3.5z"/><circle cx="16" cy="8" r="1.3" fill="currentColor"/></svg>',
+  household:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
+  all:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  globe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18A14 14 0 0 1 12 3z"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-4 9 4v8l-9 4-9-4V8z"/><path d="M3 8l9 4 9-4M12 12v8"/></svg>',
+  chevD:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  collapse:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16"/><path d="M9 4l3 3 3-3M9 20l3-3 3 3"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+};
+const STORES = {
+  grocery:{name:'Grocery',icon:ICON.grocery}, costco:{name:'Costco',icon:ICON.costco},
+  liquor:{name:'Liquor',icon:ICON.liquor}, shoppers:{name:'Shoppers',icon:ICON.shoppers},
+  household:{name:'Household',icon:ICON.household},
+};
+const STORE_ORDER = ['grocery','costco','liquor','shoppers','household'];
+const DEPT_ORDER = ['Produce','Dairy','Meat','Frozen','Bakery','Snacks','Condiments','Dry','Breakfast','Baking','Beverages','Spirits','Wine','Beer & Cider','Health','Toiletries','Cosmetics','Laundry','Cleaning','Paper','Kitchen','General'];
+
+const SEED = [
+  // ========== GROCERY (Superstore / Walmart / Co-op) ==========
+  {name:"Cauliflower rice", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Eggs", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Milk", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Cream", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Cheese sticks", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Yogurt", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Cottage cheese", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Chris' cheese", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Distilled water", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Frozen berries / raspberries", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Bananas", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Sparkling water", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Kombucha / nonalc cider", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Halloween candy", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Popcorn", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Pig puffs", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Ground beef", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
+  {name:"Chicken thigh", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
+  {name:"Pot roast", store:"grocery", routing:"anywhere", dept:"Meat", detail:"boneless bottom blade"},
+  {name:"Protein drinks", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Protein bars", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Pistachios", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Cashews", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Built bars", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Chicago mix", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
+  {name:"Protein pancakes", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Chimichangas", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Lightly breaded chicken breast chunks", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Avocado oil", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Olive oil", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"KFI Butter Chicken Sauce", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Peppercorns", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Green olives", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Sauerkraut", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Beef bouillon", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Chicken bouillon", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Pasta", store:"grocery", routing:"anywhere", dept:"Dry", detail:""},
+  {name:"Bacon bits", store:"grocery", routing:"anywhere", dept:"Dry", detail:""},
+  {name:"Maple syrup", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Instant oatmeal", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Cinnamon Toast Crunch", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Honey", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Orange juice", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Ole Cocktails", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Almond milk", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Tonic", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Perrier", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"All-Purpose flour", store:"grocery", routing:"anywhere", dept:"Baking", detail:""},
+  {name:"Outdoor plants", store:"grocery", routing:"anywhere", dept:"General", detail:""},
+
+  // ---- Safeway-only (locked) ----
+  {name:"Earls dry ribs", store:"grocery", routing:"locked", dept:"Frozen", detail:"Safeway only"},
+  {name:"Fig jam", store:"grocery", routing:"locked", dept:"Condiments", detail:"Safeway only"},
+  {name:"Choc mug cake", store:"grocery", routing:"locked", dept:"Snacks", detail:"Safeway only"},
+  {name:"Whisps cheese chips", store:"grocery", routing:"locked", dept:"Snacks", detail:"Safeway only"},
+  {name:"Nonalcoholic cider", store:"grocery", routing:"locked", dept:"Beverages", detail:"Safeway only"},
+  // ---- Superstore-only (locked) ----
+  {name:"Sour cream", store:"grocery", routing:"locked", dept:"Dairy", detail:"Superstore only"},
+
+  // ========== COSTCO (bulk — 'best here', might grab elsewhere) ==========
+  {name:"Whipped cream", store:"costco", routing:"wait", dept:"Dairy", detail:""},
+  {name:"Shredded mozzarella", store:"costco", routing:"wait", dept:"Dairy", detail:""},
+  {name:"Egg bites", store:"costco", routing:"wait", dept:"Dairy", detail:""},
+  {name:"Cream cheese", store:"costco", routing:"wait", dept:"Dairy", detail:""},
+  {name:"Parmesan", store:"costco", routing:"wait", dept:"Dairy", detail:"shredded"},
+  {name:"Shredded cheddar", store:"costco", routing:"wait", dept:"Dairy", detail:""},
+  {name:"White cheese", store:"costco", routing:"wait", dept:"Dairy", detail:""},
+  {name:"Salmon or steak bites", store:"costco", routing:"wait", dept:"Meat", detail:""},
+  {name:"Tuna", store:"costco", routing:"wait", dept:"Meat", detail:""},
+
+  // ========== LIQUOR (Alberta — must be liquor store, locked) ==========
+  {name:"Bourbon", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Gin", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Jameson", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Rum", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Vodka", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Tequila", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Cointreau", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Rye", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Scotch", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Jägermeister", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
+  {name:"Red wine", store:"liquor", routing:"locked", dept:"Wine", detail:"Spain or France"},
+  {name:"Red wine box", store:"liquor", routing:"locked", dept:"Wine", detail:"La Vieille Ferme"},
+  {name:"Bubbly", store:"liquor", routing:"locked", dept:"Wine", detail:"Giusti — orange bottle"},
+  {name:"Lillet", store:"liquor", routing:"locked", dept:"Wine", detail:""},
+  {name:"Red vermouth", store:"liquor", routing:"locked", dept:"Wine", detail:""},
+  {name:"Small red vermouth", store:"liquor", routing:"locked", dept:"Wine", detail:"for trailer"},
+  {name:"Martini minis", store:"liquor", routing:"locked", dept:"Wine", detail:"single serve"},
+  {name:"Beer", store:"liquor", routing:"locked", dept:"Beer & Cider", detail:""},
+  {name:"Apple cider", store:"liquor", routing:"locked", dept:"Beer & Cider", detail:""},
+
+  // ========== SHOPPERS (drugstore — mostly 'anywhere', cosmetics lean Shoppers) ==========
+  // Chris's drugstore staples — grab anywhere
+  {name:"Metamucil", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Advil", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Advil Cold & Sinus", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Aleve", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Allergy meds", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Claritin", store:"shoppers", routing:"anywhere", dept:"Health", detail:"for Ben and us"},
+  {name:"Pepto", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Red Polysporin", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Neti pot packets", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Nose tea", store:"shoppers", routing:"anywhere", dept:"Health", detail:""},
+  {name:"Align probiotic", store:"shoppers", routing:"anywhere", dept:"Health", detail:"Digestive Support, 42 caps (~$40)"},
+  {name:"Eyedrops", store:"shoppers", routing:"anywhere", dept:"Health", detail:"x2 — see saved photo"},
+  {name:"Q-tips", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Sensodyne toothpaste", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Nizoral shampoo", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Rogaine", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Body wash", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Native body wash", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Citrus"},
+  {name:"TRESemmé hairspray", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Tres Extra Hold, lvl 4, large can (~$7)"},
+  {name:"Dove Men deodorant", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"+care Ultimate Clinical, Clean Comfort (~$12.50)"},
+  {name:"Clinical deodorant for Carm", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"x2 — unscented or powder"},
+  {name:"Flushable wipes", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Life sensitive skin, individually wrapped"},
+  {name:"Summer's Eve feminine wash", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Extra slim tampons", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"plastic applicators"},
+  {name:"Nail clippers", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"small, for Carm"},
+
+  // Cosmetics / specialty — lean Shoppers (locked-ish, but keep anywhere since Carm's mom buys)
+  {name:"La Roche-Posay Chapstick", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x4 — Nutritic lips"},
+  {name:"La Roche-Posay cream", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:""},
+  {name:"Burt's Bees Chapstick", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x6 — ultra conditioning (~$11.50 ea)"},
+  {name:"Marcelle eye makeup remover pads", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"oil-free (~$15)"},
+  {name:"Clinique Moisture Surge SPF 28", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"sheer hydrator (~$84)"},
+  {name:"Clinique Moisture Surge 100H", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x2 — auto-replenishing (~$82)"},
+  {name:"Clinique night cream", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:""},
+  {name:"Mario Badescu drying lotion", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"pink zit stuff"},
+  {name:"Waterproof mascara", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x2"},
+
+  // ========== HOUSEHOLD ==========
+  {name:"Tide powder", store:"household", routing:"anywhere", dept:"Laundry", detail:""},
+  {name:"Tide pods", store:"household", routing:"anywhere", dept:"Laundry", detail:""},
+  {name:"Dish soap", store:"household", routing:"anywhere", dept:"Cleaning", detail:""},
+  {name:"Dishwasher pods", store:"household", routing:"anywhere", dept:"Cleaning", detail:""},
+  {name:"Jet Dry", store:"household", routing:"anywhere", dept:"Cleaning", detail:""},
+  {name:"Toilet paper", store:"household", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Paper towel", store:"household", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Kleenex", store:"household", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Ziplocks", store:"household", routing:"anywhere", dept:"Kitchen", detail:""},
+  {name:"Organic bags", store:"household", routing:"anywhere", dept:"Kitchen", detail:""},
+  {name:"Clear bags", store:"household", routing:"anywhere", dept:"Kitchen", detail:""},
+  {name:"Parchment", store:"household", routing:"anywhere", dept:"Kitchen", detail:""},
+  {name:"Foil", store:"household", routing:"anywhere", dept:"Kitchen", detail:""},
+  {name:"AA batteries", store:"household", routing:"anywhere", dept:"General", detail:""},
+];
+
+// `items` is the in-memory working copy every render function reads from.
+// Firebase mode keeps it in sync via onSnapshot; local mode loads it from localStorage.
+let items = [];
+let synced = false;        // false until first data load — drives the loading state
+let backend = 'local';     // 'firebase' once a real config connects; otherwise 'local'
+let mode = localStorage.getItem('pantry_mode') || 'catalog';
+let filter = 'all';
+let editingId = null;
+let draft = {store:'grocery', routing:'anywhere', qty:1, dest:'needs'};
+// collapsed departments: stored as a set of "store|dept" keys
+let collapsed = loadCollapsed();
+function loadCollapsed(){ try{return new Set(JSON.parse(localStorage.getItem('pantry_collapsed'))||[])}catch(e){return new Set()} }
+function saveCollapsed(){ localStorage.setItem('pantry_collapsed', JSON.stringify([...collapsed])); }
+function deptKey(store,dept){ return store+'|'+dept; }
+function isCollapsed(store,dept){ return collapsed.has(deptKey(store,dept)); }
+function toggleDept(store,dept){
+  const k=deptKey(store,dept);
+  if(collapsed.has(k)) collapsed.delete(k); else collapsed.add(k);
+  saveCollapsed();
+  const bar=document.querySelector(`[data-deptkey="${CSS.escape(k)}"]`);
+  if(bar){ bar.classList.toggle('collapsed'); const items=bar.nextElementSibling;
+    if(items&&items.classList.contains('dept-items')){
+      if(collapsed.has(k)){ items.style.maxHeight=items.scrollHeight+'px'; requestAnimationFrame(()=>{items.classList.add('collapsed');}); }
+      else { items.classList.remove('collapsed'); items.style.maxHeight=items.scrollHeight+'px';
+        setTimeout(()=>{ if(!isCollapsed(store,dept)) items.style.maxHeight='none'; },300); }
+    }
+  }
+}
+function setAllDepts(store,deptList,collapse){
+  deptList.forEach(d=>{ const k=deptKey(store,d); if(collapse) collapsed.add(k); else collapsed.delete(k); });
+  saveCollapsed();
+  if(mode==='list') renderList(); else renderCatalog();
+}
+
+function uid(){ return 'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function stripId(i){ const { id, ...rest } = i; return rest; }
+function refresh(){ renderChips(); render(); }
+
+/* ============ STORAGE LAYER ============
+   Two backends behind one tiny interface:
+     • firebase — shared, real-time, both phones see the same live data
+     • local    — per-device localStorage fallback (so the app works before
+                  Firebase is configured, or if it can't be reached)
+   Every action calls persistItem()/removeItem(); the renderers never care which
+   backend is active. */
+
+function persistItem(item){
+  if(backend==='firebase'){
+    const { db, fs } = window.PantryFB;
+    return fs.setDoc(fs.doc(db,'items',item.id), stripId(item))
+      .catch(err=>{ console.error('persist failed', err); setSync('offline'); });
+  }
+  saveLocal();
+  return Promise.resolve();
+}
+function removeItem(id){
+  items = items.filter(x=>x.id!==id);     // optimistic — keeps the UI instant
+  if(backend==='firebase'){
+    const { db, fs } = window.PantryFB;
+    return fs.deleteDoc(fs.doc(db,'items',id))
+      .catch(err=>{ console.error('delete failed', err); setSync('offline'); });
+  }
+  saveLocal();
+  return Promise.resolve();
+}
+
+/* ---- local backend ---- */
+function saveLocal(){ try{ localStorage.setItem('pantry_v2', JSON.stringify(items)); }catch(e){} }
+function loadLocal(){
+  try{ const s=JSON.parse(localStorage.getItem('pantry_v2')); if(s&&s.length){ s.forEach(i=>{ if(i.note===undefined)i.note=''; }); return s; } }catch(e){}
+  // first run on this device: hydrate from SEED
+  const seeded = SEED.map(s=>({id:uid(),name:s.name,store:s.store,routing:s.routing,dept:s.dept||'General',
+    detail:s.detail||'', note:'', onList:false, qty:1, checked:false}));
+  try{ localStorage.setItem('pantry_v2', JSON.stringify(seeded)); }catch(e){}
+  return seeded;
+}
+function bootLocal(reason){
+  backend='local';
+  items=loadLocal();
+  synced=true;
+  setSync('local');
+  if(reason==='no-config'){
+    showBanner('info','Single-device mode — changes stay on this phone. To sync both phones live, add your Firebase keys (see SETUP.md).');
+  }
+  refresh();
+}
+
+/* ---- firebase backend ---- */
+async function seedIfEmpty(){
+  const { db, fs } = window.PantryFB;
+  const col = fs.collection(db,'items');
+  const snap = await fs.getDocs(col);
+  if(!snap.empty) return;                 // already seeded — never duplicate
+  const batch = fs.writeBatch(db);
+  SEED.forEach(s=>{
+    const ref = fs.doc(db,'items',uid());
+    batch.set(ref, { name:s.name, store:s.store, routing:s.routing, dept:s.dept||'General',
+      detail:s.detail||'', note:'', qty:1, onList:false, checked:false });
+  });
+  await batch.commit();
+}
+let unsubSnap=null;
+function startFirebaseSync(){
+  if(unsubSnap) return;                    // already listening
+  const { db, fs } = window.PantryFB;
+  const col = fs.collection(db,'items');
+  unsubSnap = fs.onSnapshot(col,
+    snap=>{ items = snap.docs.map(d=>({ id:d.id, ...d.data() })); synced=true;
+            setSync(snap.metadata.fromCache ? 'offline' : 'online'); refresh(); },
+    err=>{ console.error('snapshot error', err); setSync('offline');
+           if(!synced){ showBanner('error',"Signed in, but couldn't load the list — make sure the Firestore rules are published (SETUP.md)."); } }
+  );
+}
+function stopFirebaseSync(){ if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubSnap=null; } }
+/* ---- access control: only these Google accounts can open the shared list ----
+   This is the friendly in-app gate; the REAL enforcement lives in firestore.rules,
+   which lists the same emails. To add/remove a person, change BOTH places. */
+const ALLOWED = ['carmyn.pre@gmail.com','prefontainech@gmail.com'];
+
+async function firebaseBoot(){
+  const { auth, authFns } = window.PantryFB;
+  showAuthGate('checking');
+  // If we just came back from a Google redirect (mobile path), finish it.
+  try{ await authFns.getRedirectResult(auth); }catch(e){ console.warn('redirect result', e); }
+  // Drive the app off the signed-in state for the whole session.
+  authFns.onAuthStateChanged(auth, async (user)=>{
+    const email = user && (user.email||'').toLowerCase();
+    if(!user){ stopFirebaseSync(); synced=false; items=[]; setSync('connecting'); showAuthGate('signin'); return; }
+    if(!ALLOWED.includes(email)){
+      showAuthGate('denied', email);
+      try{ await authFns.signOut(auth); }catch(e){}
+      return;
+    }
+    // authorized ✓
+    hideAuthGate();
+    const s=document.querySelector('.sync'); if(s) s.style.cursor='pointer';
+    setSync('connecting');
+    try{ await seedIfEmpty(); startFirebaseSync(); }
+    catch(e){ console.error('post-sign-in load failed', e); setSync('offline');
+      showBanner('error',"Signed in, but couldn't reach the list. Check the Firestore rules are published (SETUP.md)."); }
+  });
+}
+
+/* ---- sign-in gate UI ---- */
+function googleBtnLabel(text){
+  return '<svg viewBox="0 0 48 48" aria-hidden="true">'
+    + '<path fill="currentColor" d="M24 9.5c3.7 0 6.3 1.6 7.7 2.9l5.7-5.6C33.9 3.5 29.4 1.5 24 1.5 15 1.5 7.3 6.7 3.6 14.3l6.9 5.3C12.2 13.6 17.6 9.5 24 9.5z"/>'
+    + '<path fill="currentColor" d="M46.1 24.5c0-1.6-.1-2.7-.4-3.9H24v7.4h12.7c-.3 2-1.6 4.9-4.6 6.9l6.7 5.2c4-3.7 6.3-9.1 6.3-15.6z"/>'
+    + '<path fill="currentColor" d="M10.5 19.6c-.4 1.3-.7 2.7-.7 4.4s.3 3.1.7 4.4l-6.9 5.3C1.9 30.4 1 27.3 1 24s.9-6.4 2.6-9.7l6.9 5.3z"/>'
+    + '<path fill="currentColor" d="M24 46.5c5.4 0 9.9-1.8 13.2-4.9l-6.7-5.2c-1.8 1.2-4.1 2.1-6.5 2.1-6.4 0-11.8-4.1-13.5-9.8l-6.9 5.3C7.3 41.3 15 46.5 24 46.5z"/>'
+    + '</svg> '+esc(text);
+}
+function showAuthGate(state, email){
+  const g=document.getElementById('authgate'); if(!g) return;
+  const sub=document.getElementById('agSub'), note=document.getElementById('agNote'), btn=document.getElementById('authBtn');
+  g.hidden=false;
+  if(state==='checking'){ sub.textContent='Checking your sign-in…'; btn.style.visibility='hidden'; note.textContent=''; return; }
+  btn.style.visibility='visible'; btn.disabled=false;
+  if(state==='denied'){
+    sub.textContent='That account isn’t on the list.';
+    note.innerHTML=(email?'<strong>'+esc(email)+'</strong> can’t open this list. ':'')+'Only Chris and Carmyn’s Google accounts have access.';
+    btn.innerHTML=googleBtnLabel('Try a different account');
+  } else {
+    sub.textContent='A private list for Chris & Carmyn. Sign in to continue.';
+    note.textContent='';
+    btn.innerHTML=googleBtnLabel('Continue with Google');
+  }
+}
+function hideAuthGate(){ const g=document.getElementById('authgate'); if(g) g.hidden=true; }
+async function signInGoogle(){
+  const fb=window.PantryFB||{}, auth=fb.auth, authFns=fb.authFns;
+  if(!auth||!authFns) return;
+  const btn=document.getElementById('authBtn'), note=document.getElementById('agNote');
+  const provider=new authFns.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt:'select_account' });
+  if(btn) btn.disabled=true; if(note) note.textContent='';
+  try{
+    await authFns.signInWithPopup(auth, provider);
+  }catch(e){
+    console.warn('popup sign-in failed', e&&e.code);
+    if(e && (e.code==='auth/popup-closed-by-user' || e.code==='auth/cancelled-popup-request')){ if(btn) btn.disabled=false; return; }
+    if(e && (e.code==='auth/popup-blocked' || e.code==='auth/operation-not-supported-in-this-environment')){
+      try{ await authFns.signInWithRedirect(auth, provider); return; }
+      catch(e2){ console.error('redirect sign-in failed', e2); e=e2; }
+    }
+    if(note){
+      let m='Sign-in didn’t work. Please try again.';
+      if(e&&e.code==='auth/unauthorized-domain') m='This web address isn’t authorized in Firebase yet (SETUP.md → step 2c, Authorized domains).';
+      else if(e&&(e.code==='auth/operation-not-allowed'||e.code==='auth/configuration-not-found')) m='Google sign-in isn’t turned on in Firebase yet (SETUP.md → step 2c).';
+      note.textContent=m;
+    }
+    if(btn) btn.disabled=false;
+  }
+}
+async function signOutKanban(){
+  const fb=window.PantryFB||{};
+  if(fb.auth&&fb.authFns){ try{ await fb.authFns.signOut(fb.auth); }catch(e){} }
+}
+function syncTap(){
+  if(backend!=='firebase') return;
+  const fb=window.PantryFB||{};
+  if(fb.auth&&fb.auth.currentUser && confirm('Sign out of Kanban on this device?')) signOutKanban();
+}
+
+/* ---- entry point, called by the Firebase module below once it has decided ---- */
+async function bootPantry(opts){
+  opts = opts || { backend:'local', reason:'no-config' };
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(console.error);
+  }
+  if(opts.backend==='firebase'){
+    backend='firebase';
+    setSync('connecting');
+    try{ await firebaseBoot(); return; }
+    catch(e){
+      console.error('Firebase boot failed, falling back to local.', e);
+      showBanner('error',"Couldn't reach the shared list — showing this device's copy. Check your Firebase setup (SETUP.md).");
+    }
+  }
+  bootLocal(opts.reason);
+}
+window.bootPantry = bootPantry;
+
+/* ---- UI: sync LED + status banner ---- */
+function setSync(state){
+  const el=document.querySelector('.sync'); if(!el)return;
+  el.classList.remove('local','offline');
+  let label='SYNCED';
+  if(state==='local'){ el.classList.add('local'); label='THIS DEVICE'; }
+  else if(state==='offline'){ el.classList.add('offline'); label='OFFLINE'; }
+  else if(state==='connecting'){ el.classList.add('local'); label='CONNECTING'; }
+  el.innerHTML='<span class="led"></span>'+label;
+}
+function showBanner(kind,msg){
+  const b=document.getElementById('banner'); if(!b)return;
+  b.className='banner'+(kind==='error'?' err':'');
+  b.innerHTML='<span class="b-msg">'+esc(msg)+'</span><button class="b-x" aria-label="Dismiss" onclick="this.parentElement.hidden=true">&times;</button>';
+  b.hidden=false;
+}
+
+function canBuyAt(item,s){ if(s==='all')return true; if(item.routing==='anywhere')return true; return item.store===s; }
+function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ============ MODE & CHIPS ============
+function setMode(m){
+  mode=m; localStorage.setItem('pantry_mode',m);
+  document.getElementById('toggle').classList.toggle('list', m==='list');
+  document.getElementById('tabCatalog').classList.toggle('active', m==='catalog');
+  document.getElementById('tabList').classList.toggle('active', m==='list');
+  document.getElementById('catalogView').classList.toggle('active', m==='catalog');
+  document.getElementById('listView').classList.toggle('active', m==='list');
+  refresh();
+  window.scrollTo(0,0);
+}
+function renderChips(){
+  const c=document.getElementById('chips');
+  const counts={};
+  STORE_ORDER.forEach(s=>{
+    counts[s] = mode==='list' ? items.filter(i=>i.onList && canBuyAt(i,s)).length : items.filter(i=>i.store===s).length;
+  });
+  const allCount = mode==='list' ? items.filter(i=>i.onList).length : items.length;
+  let html=`<div class="chip ${filter==='all'?'sel':''}" data-s="all" onclick="setFilter('all')"><span class="cdot"></span>All</div>`;
+  html+=STORE_ORDER.map(s=>`<div class="chip ${filter===s?'sel':''}" data-s="${s}" onclick="setFilter('${s}')"><span class="cdot"></span>${STORES[s].name}</div>`).join('');
+  c.innerHTML=html;
+}
+function setFilter(f){ filter=f; refresh(); }
+function loadingHTML(){ return `<div class="loading">Loading your list <span class="l-dot"></span><span class="l-dot"></span><span class="l-dot"></span></div>`; }
+
+function render(){ updateListCount(); if(mode==='catalog') renderCatalog(); else renderList(); }
+function updateListCount(){
+  const n=items.filter(i=>i.onList).length;
+  const el=document.getElementById('listCount'); el.textContent=n; el.style.display=n?'inline-flex':'none';
+}
+
+// ============ CATALOG ============
+function renderCatalog(){
+  const body=document.getElementById('catBody');
+  if(!synced){ body.innerHTML=loadingHTML(); return; }
+  let pool=items.filter(i=>filter==='all'||i.store===filter);
+  if(!pool.length){ body.innerHTML=`<div class="empty"><div class="e-ico">${ICON.box}</div><p>Nothing here yet.</p></div>`; return; }
+
+  let html='';
+  const stores = filter==='all' ? STORE_ORDER : [filter];
+  stores.forEach(s=>{
+    const grp=pool.filter(i=>i.store===s);
+    if(!grp.length) return;
+    const depts=DEPT_ORDER.filter(d=>grp.some(i=>i.dept===d));
+    if(filter==='all'){ html+=storeHeader(s,grp.length); }
+    else { html+=collapseAllBtn(s,depts); }
+    depts.forEach(d=>{
+      const dg=grp.filter(i=>i.dept===d);
+      const anchored=dg.filter(i=>i.store===s&&(i.routing==='locked'||i.routing==='wait'));
+      const rest=dg.filter(i=>!anchored.includes(i));
+      html+=deptBar(s,d,dg.length);
+      const open=!isCollapsed(s,d);
+      html+=`<div class="dept-items${open?'':' collapsed'}" style="${open?'max-height:none':'max-height:0'}"><div class="group">`;
+      if(anchored.length && rest.length){
+        html+=anchored.map(i=>catRow(i)).join('');
+        html+=`<div class="or-line">or grab elsewhere</div>`;
+        html+=rest.map(i=>catRow(i)).join('');
+      } else {
+        html+=dg.map(i=>catRow(i)).join('');
+      }
+      html+=`</div></div>`;
+    });
+  });
+  body.innerHTML=html;
+}
+function storeHeader(s,count){
+  return `<div class="store-h"><span class="sh-name">${STORES[s].name}</span><span class="sh-count">${count} ITEMS</span></div>`;
+}
+function collapseAllBtn(s,depts){
+  const anyOpen=depts.some(d=>!isCollapsed(s,d));
+  return `<div class="collapse-all" onclick="setAllDepts('${s}',${JSON.stringify(depts).replace(/"/g,'&quot;')},${anyOpen})">
+    ${ICON.collapse}${anyOpen?'Collapse all':'Expand all'}</div>`;
+}
+function deptBar(s,d,count){
+  const k=deptKey(s,d), open=!isCollapsed(s,d);
+  return `<button class="deptbar${open?'':' collapsed'}" data-deptkey="${k}" onclick="toggleDept('${s}','${d}')">
+    <span class="db-name">${d}</span>
+    <span class="db-count">${count}</span>
+    <span class="db-chev">${ICON.chevD}</span></button>`;
+}
+function routeTag(i, ctx){
+  // Only show a tag when it carries information. "Anywhere" with no cross-store context = silent (it's the default).
+  if(i.routing==='locked') return `<span class="r-tag locked">${ICON.lock}${STORES[i.store].name} only</span>`;
+  if(i.routing==='wait') return `<span class="r-tag wait">${ICON.clock}Ideally ${STORES[i.store].name}</span>`;
+  if(i.routing==='anywhere' && ctx && ctx!=='all' && ctx!==i.store) return `<span class="r-tag anywhere">Usually ${STORES[i.store].name}</span>`;
+  return '';
+}
+function catRow(i){
+  const detail=i.detail?`<div class="r-detail">${esc(i.detail)}</div>`:'';
+  const tag=routeTag(i,null);
+  // circle toggles on/off list; tapping the name/body opens editor
+  const circle = i.onList ? `<div class="r-add done" onclick="event.stopPropagation();toggleList('${i.id}')">${ICON.check}</div>`
+                          : `<div class="r-add" onclick="event.stopPropagation();toggleList('${i.id}')">${ICON.plus}</div>`;
+  const qtyHint = i.onList && i.qty>1 ? `<span class="r-tag wait">${i.qty} to buy</span>` : '';
+  return `<div class="row ${i.onList?'added':''}" onclick="editItem('${i.id}')">
+    <div class="r-body"><div class="r-name">${esc(i.name)}</div>${detail}</div>
+    ${tag}${qtyHint}${circle}</div>`;
+}
+
+// ============ SHOPPING LIST ============
+function renderList(){
+  const body=document.getElementById('listBody');
+  if(!synced){ body.innerHTML=loadingHTML(); return; }
+  const onList=items.filter(i=>i.onList);
+  if(!onList.length){
+    body.innerHTML=`<div class="empty"><div class="e-ico">${ICON.box}</div>
+      <p><span class="e-strong">Your shopping list is empty.</span><br>Open your needs list and tap the things you need.</p>
+      <div class="e-btn" onclick="setMode('catalog')">Open needs list</div></div>`;
+    return;
+  }
+  let html='';
+  const stores = filter==='all' ? STORE_ORDER : [filter];
+  stores.forEach(s=>{
+    const visible = filter==='all' ? onList.filter(i=>i.store===s) : onList.filter(i=>canBuyAt(i,s));
+    if(!visible.length) return;
+    const depts=DEPT_ORDER.filter(d=>visible.some(i=>i.dept===d));
+    if(filter==='all'){ html+=storeHeader(s,visible.length); }
+    else { html+=collapseAllBtn(s,depts); }
+    depts.forEach(d=>{
+      const dg=visible.filter(i=>i.dept===d);
+      const anchored=dg.filter(i=>i.store===s&&(i.routing==='locked'||i.routing==='wait'));
+      const homeAny=dg.filter(i=>i.store===s&&i.routing==='anywhere');
+      const elsewhere=dg.filter(i=>i.store!==s);
+      const topGroup=anchored.concat(homeAny);
+      html+=deptBar(s,d,dg.length);
+      const open=!isCollapsed(s,d);
+      html+=`<div class="dept-items${open?'':' collapsed'}" style="${open?'max-height:none':'max-height:0'}"><div class="group">`;
+      if(filter!=='all' && topGroup.length && elsewhere.length){
+        html+=topGroup.map(i=>listRow(i,s)).join('');
+        html+=`<div class="or-line">or grab here anyway</div>`;
+        html+=elsewhere.map(i=>listRow(i,s)).join('');
+      } else {
+        html+=dg.map(i=>listRow(i, filter==='all'?'all':s)).join('');
+      }
+      html+=`</div></div>`;
+    });
+  });
+  body.innerHTML=html;
+}
+function listRow(i,ctx){
+  const detail=i.detail?`<div class="r-detail">${esc(i.detail)}</div>`:'';
+  const note=i.note?`<div class="r-note">${ICON.note}${esc(i.note)}</div>`:'';
+  const tag=routeTag(i,ctx);
+  const qtyBadge=`<div class="qty-badge"><span class="qb-num">${i.qty}</span><span class="qb-lbl">Buy</span></div>`;
+  return `<div class="row ${i.checked?'checked':''}">
+    <div class="r-check" onclick="event.stopPropagation();toggleCheck('${i.id}')">${ICON.check}</div>
+    <div class="r-body" onclick="editItem('${i.id}')"><div class="r-name">${esc(i.name)}</div>${detail}${note}</div>
+    ${tag}${qtyBadge}
+  </div>`;
+}
+
+// ============ ACTIONS ============
+let checkTimers = {};   // per-item restock timers, keyed by id (so a re-tap cancels)
+function addToList(id){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  i.onList=true; i.checked=false; if(!i.qty||i.qty<1) i.qty=1;
+  persistItem(i); refresh(); toast(`${i.name} added to list`);
+}
+function toggleList(id){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  if(i.onList){ i.onList=false; i.checked=false; persistItem(i); refresh(); toast(`${i.name} removed`); }
+  else { i.onList=true; i.checked=false; if(!i.qty||i.qty<1)i.qty=1; persistItem(i); refresh(); toast(`${i.name} added`); }
+}
+function toggleCheck(id){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  i.checked=!i.checked;
+  persistItem(i);
+  if(mode==='list')renderList();
+  if(i.checked){
+    clearTimeout(checkTimers[id]);
+    checkTimers[id]=setTimeout(()=>{
+      delete checkTimers[id];
+      const it=items.find(x=>x.id===id); if(!it)return;   // re-find: snapshot may have replaced the array
+      it.checked=false; it.onList=false; persistItem(it);
+      if(mode==='list')renderList(); updateListCount(); renderChips();
+      toastUndo(`${it.name} restocked`, id);
+    }, 550);
+  } else { clearTimeout(checkTimers[id]); delete checkTimers[id]; }
+}
+function undoRestock(id){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  i.onList=true; i.checked=false; persistItem(i); refresh();
+  document.getElementById('toast').classList.remove('show');
+}
+function stepQty(id,d){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  i.qty=Math.max(1,Math.min(24,i.qty+d)); persistItem(i); refresh();
+}
+
+// ============ ADD / EDIT ============
+function buildSegs(){
+  document.getElementById('fStore').innerHTML=STORE_ORDER.map(s=>`<div class="opt ${draft.store===s?'sel':''}" onclick="pickStore('${s}')">${STORES[s].name}</div>`).join('');
+  const R=[{k:'locked',label:'Only here',ico:ICON.lock},{k:'wait',label:'Best here',ico:ICON.clock},{k:'anywhere',label:'Anywhere',ico:ICON.globe}];
+  document.getElementById('fRouting').innerHTML=R.map(r=>`<div class="opt ${draft.routing===r.k?'sel':''}" onclick="pickRouting('${r.k}')">${r.ico}${r.label}</div>`).join('');
+  const sName=STORES[draft.store].name;
+  const map={locked:`Shows <strong>only</strong> under ${sName}. Must be bought there.`,
+    wait:`Lives under ${sName}, but shows as a reminder elsewhere so you can wait or grab it now.`,
+    anywhere:`Normally ${sName}, but floats into every store's grab-anyway list.`};
+  document.getElementById('routingHelp').innerHTML=map[draft.routing];
+}
+function pickStore(s){ draft.store=s; buildSegs(); }
+function pickRouting(r){ draft.routing=r; buildSegs(); }
+function bumpQty(d){ draft.qty=Math.max(1,Math.min(24,draft.qty+d)); document.getElementById('fQty').textContent=draft.qty; }
+function pickDest(d){
+  draft.dest=d;
+  document.querySelectorAll('#fDest .opt').forEach(o=>o.classList.toggle('sel', o.dataset.dest===d));
+}
+
+function openAdd(){
+  editingId=null;
+  draft={store: filter!=='all'?filter:'grocery', routing:'anywhere', qty:1, dest:'needs'};
+  document.getElementById('sheetTitle').textContent='New product';
+  document.getElementById('sheetSub').textContent='Add it once — it lives in your needs list';
+  document.getElementById('saveBtn').textContent='Save product';
+  document.getElementById('deleteBtn').style.display='none';
+  document.getElementById('listToggleBtn').style.display='none';
+  document.getElementById('destField').style.display='block';
+  pickDest('needs');
+  document.getElementById('fName').value=''; document.getElementById('fDetail').value=''; document.getElementById('fNote').value='';
+  document.getElementById('fQty').textContent=draft.qty;
+  buildSegs(); openSheet(); setTimeout(()=>document.getElementById('fName').focus(),320);
+}
+function openAddNew(e){ if(e) e.stopPropagation(); openAdd(); }
+function editItem(id){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  editingId=id; draft={store:i.store,routing:i.routing,qty:i.qty,dest:'needs'};
+  document.getElementById('sheetTitle').textContent=i.name;
+  document.getElementById('sheetSub').textContent= i.onList?'On your shopping list':'In your needs list';
+  document.getElementById('saveBtn').textContent='Save changes';
+  document.getElementById('deleteBtn').style.display='block';
+  document.getElementById('deleteBtn').textContent = 'Delete from needs list';
+  document.getElementById('destField').style.display='none';
+  const lt=document.getElementById('listToggleBtn');
+  lt.style.display='block';
+  lt.textContent = i.onList ? 'Remove from shopping list' : 'Add to shopping list';
+  lt.className = i.onList ? 'save ghost' : 'save';
+  document.getElementById('fName').value=i.name; document.getElementById('fDetail').value=i.detail||''; document.getElementById('fNote').value=i.note||'';
+  document.getElementById('fQty').textContent=draft.qty;
+  buildSegs(); openSheet();
+}
+function listToggleFromSheet(){
+  if(!editingId)return;
+  const i=items.find(x=>x.id===editingId); if(!i)return;
+  i.detail=document.getElementById('fDetail').value.trim();
+  i.note=document.getElementById('fNote').value.trim();
+  Object.assign(i,{store:draft.store,routing:draft.routing,qty:draft.qty});
+  if(i.onList){ i.onList=false; i.checked=false; toast(`${i.name} removed`); }
+  else { i.onList=true; i.checked=false; if(!i.qty||i.qty<1)i.qty=1; toast(`${i.name} added to list`); }
+  persistItem(i); closeSheet(); refresh();
+}
+function saveItem(){
+  const name=document.getElementById('fName').value.trim();
+  if(!name){ toast('Give it a name first'); document.getElementById('fName').focus(); return; }
+  const detail=document.getElementById('fDetail').value.trim();
+  const note=document.getElementById('fNote').value.trim();
+  if(editingId){
+    const i=items.find(x=>x.id===editingId); if(!i)return;
+    Object.assign(i,{name,detail,note,store:draft.store,routing:draft.routing,qty:draft.qty});
+    persistItem(i); closeSheet(); refresh(); toast('Saved');
+    return;
+  }
+  const toShopping = draft.dest==='shopping';
+  const obj={id:uid(),name,detail,note,store:draft.store,routing:draft.routing,qty:draft.qty,dept:'General',
+    onList:toShopping,checked:false};
+  items.unshift(obj); persistItem(obj); closeSheet();
+  if(toShopping && mode!=='list'){ setMode('list'); }
+  else { refresh(); }
+  toast(toShopping ? `${name} added to shopping list` : `${name} saved to needs list`);
+}
+function deleteItem(){
+  if(!editingId)return;
+  const i=items.find(x=>x.id===editingId);
+  if(i && i.onList){ i.onList=false; i.checked=false; persistItem(i); closeSheet(); refresh(); toast('Removed from list'); return; }
+  removeItem(editingId); closeSheet(); refresh(); toast('Deleted');
+}
+function openSheet(){ document.getElementById('scrim').classList.add('open'); document.getElementById('sheet').classList.add('open'); }
+function closeSheet(){ document.getElementById('scrim').classList.remove('open'); document.getElementById('sheet').classList.remove('open'); document.getElementById('fName').blur(); }
+
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.innerHTML=esc(msg); t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+function toastUndo(msg,id){ const t=document.getElementById('toast'); t.innerHTML=esc(msg)+`<span class="undo" onclick="undoRestock('${id}')">Undo</span>`;
+  t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),3200); }
+
+// ============ GLOBAL SEARCH ============
+function focusSearch(e){ document.getElementById('globalSearch').focus(); }
+function openResults(){ document.getElementById('results').classList.add('open'); onSearch(); }
+function closeResults(){
+  document.getElementById('results').classList.remove('open');
+  const dock=document.getElementById('searchdock'); dock.classList.remove('has-text');
+  document.getElementById('globalSearch').value='';
+}
+function clearSearch(e){ e.stopPropagation();
+  document.getElementById('globalSearch').value=''; onSearch();
+  document.getElementById('globalSearch').focus();
+}
+function onSearch(){
+  const q=document.getElementById('globalSearch').value.toLowerCase().trim();
+  const dock=document.getElementById('searchdock');
+  dock.classList.toggle('has-text', q.length>0);
+  const res=document.getElementById('results');
+  if(!res.classList.contains('open')) res.classList.add('open');
+  const head=document.getElementById('resHead');
+  const body=document.getElementById('resBody');
+  if(!q){ head.textContent='Type to search'; body.innerHTML=`<div class="empty" style="padding:40px"><p>Start typing to find anything in your needs list.</p></div>`; return; }
+  const matches=items.filter(i=>i.name.toLowerCase().includes(q)||(i.detail||'').toLowerCase().includes(q));
+  if(!matches.length){
+    head.textContent='No matches';
+    body.innerHTML=`<div class="empty" style="padding:40px"><p>Nothing called “${esc(q)}”.</p>
+      <div class="e-btn" onclick="addNewFromSearch(event)">Add “${esc(q)}” as new</div></div>`;
+    return;
+  }
+  head.textContent=`${matches.length} result${matches.length>1?'s':''}`;
+  // group by store for clarity
+  let html='<div class="group">';
+  matches.forEach(i=>{
+    const detail=i.detail?`<div class="r-detail">${esc(i.detail)}</div>`:'';
+    const circle = i.onList ? `<div class="r-add done">${ICON.check}</div>` : `<div class="r-add">${ICON.plus}</div>`;
+    html+=`<div class="row ${i.onList?'added':''}" onclick="searchAdd('${i.id}')">
+      <div class="r-body"><div class="r-name">${esc(i.name)}</div>${detail}</div>
+      <span class="r-tag anywhere">${STORES[i.store].name}</span>${circle}</div>`;
+  });
+  html+='</div>';
+  body.innerHTML=html;
+}
+function searchAdd(id){
+  const i=items.find(x=>x.id===id); if(!i)return;
+  if(i.onList){ i.onList=false; i.checked=false; toast(`${i.name} removed`); }
+  else { i.onList=true; i.checked=false; if(!i.qty||i.qty<1)i.qty=1; toast(`${i.name} added`); }
+  persistItem(i); refresh(); onSearch();
+}
+function addNewFromSearch(e){
+  if(e) e.stopPropagation();
+  const q=document.getElementById('globalSearch').value.trim();
+  closeResults();
+  openAdd();
+  if(q) document.getElementById('fName').value=q;
+}
+
+// tap outside results (on the dock area) keeps it; tapping a result store header area closes.
+// close results when scrolling up to header? simpler: add a tap-to-dismiss on empty space via Escape-like back.
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeResults(); closeSheet(); }});
+
+// boot — paint the shell (shows a loading state until data arrives); the Firebase
+// module below then picks the backend and calls window.bootPantry(...).
+document.getElementById('sdAddIco').innerHTML=ICON.plus;
+document.getElementById('sdNewIco').innerHTML=ICON.plus;
+setSync('connecting');
+setMode(mode);
+</script>
+
+<!-- Firebase loader (module). Reads ./firebase-config.js: with real keys it connects to
+     the shared Firestore so both phones sync; otherwise the app runs single-device. -->
+<script type="module">
+  let firebaseConfig = null;
+  try { ({ firebaseConfig } = await import('./firebase-config.js')); }
+  catch(e){ console.warn('firebase-config.js missing or invalid — single-device mode.', e); }
+  const hasConfig = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId
+                    && !String(firebaseConfig.apiKey).includes('PASTE');
+  if(!hasConfig){
+    window.bootPantry({ backend:'local', reason:'no-config' });
+  } else {
+    try{
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+      const fs = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+      const a = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+      const app = initializeApp(firebaseConfig);
+      let db;
+      try{ db = fs.initializeFirestore(app, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) }); }
+      catch(e){ console.warn('Offline cache unavailable; using in-memory cache.', e); db = fs.getFirestore(app); }
+      window.PantryFB = { db, fs, auth: a.getAuth(app), authFns: {
+        GoogleAuthProvider: a.GoogleAuthProvider, signInWithPopup: a.signInWithPopup,
+        signInWithRedirect: a.signInWithRedirect, getRedirectResult: a.getRedirectResult,
+        onAuthStateChanged: a.onAuthStateChanged, signOut: a.signOut } };
+      window.bootPantry({ backend:'firebase' });
+    }catch(e){
+      console.error('Could not load Firebase; running in single-device mode.', e);
+      window.bootPantry({ backend:'local', reason:'fb-init-failed' });
+    }
+  }
+</script>
+</body>
+</html>

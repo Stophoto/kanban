@@ -55,9 +55,9 @@
   /* ---- mode toggle ---- */
   .toggle{display:flex;gap:28px;}
   .toggle button{border:none;background:none;padding:0 0 13px;font-family:var(--font);font-weight:700;
-    font-size:15px;letter-spacing:.2px;color:var(--grey);cursor:pointer;position:relative;display:flex;align-items:center;gap:8px;text-transform:uppercase;}
-  .toggle button.active{color:var(--black);}
-  .toggle button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--teal);
+    font-size:15.5px;letter-spacing:.2px;color:var(--grey-light);cursor:pointer;position:relative;display:flex;align-items:center;gap:8px;text-transform:uppercase;transition:color .15s;}
+  .toggle button.active{color:var(--black);font-weight:900;}
+  .toggle button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:4px;background:var(--teal);border-radius:2px;
     transform:scaleX(0);transition:transform .24s cubic-bezier(.32,.72,0,1);transform-origin:left;}
   .toggle button.active::after{transform:scaleX(1);}
   .toggle .tcount{font-size:11px;font-weight:800;color:var(--white);background:var(--need);min-width:19px;height:19px;
@@ -182,7 +182,11 @@
     padding:8px 22px calc(26px + var(--safe-bottom));max-width:480px;margin:0 auto;transform:translateY(102%);
     transition:transform .34s cubic-bezier(.32,.72,0,1);max-height:94vh;overflow-y:auto;}
   .sheet.open{transform:translateY(0);}
-  .grab{width:40px;height:5px;border-radius:3px;background:var(--divider);margin:8px auto 18px;}
+  .grab-tap{display:block;padding:10px 0 16px;cursor:pointer;}
+  .grab{width:44px;height:5px;border-radius:3px;background:var(--grey-light);margin:0 auto;}
+  .sheet-x{position:absolute;top:12px;right:16px;width:34px;height:34px;border:none;background:var(--card-light);color:var(--slate);
+    border-radius:50%;font-size:23px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 0 2px;z-index:2;}
+  .sheet-x:active{background:var(--fog);}
   .sheet h2{font-family:var(--font);font-weight:800;font-size:23px;letter-spacing:-.5px;margin-bottom:3px;color:var(--black);}
   .sheet .sub{font-size:13px;color:var(--grey);margin-bottom:22px;font-weight:500;}
   .field{margin-bottom:18px;}
@@ -208,6 +212,7 @@
   .save{width:100%;background:var(--black);color:var(--white);border:none;border-radius:13px;padding:17px;font-size:13px;
     font-weight:800;font-family:var(--font);cursor:pointer;margin-top:10px;letter-spacing:1px;text-transform:uppercase;}
   .save:active{opacity:.9;} .save.ghost{background:none;color:var(--need);margin-top:4px;padding:13px;}
+  .save.cancel{background:none;color:var(--grey);margin-top:2px;padding:13px;}
 
   .toast{position:fixed;bottom:calc(96px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(12px);
     background:var(--black);color:var(--white);padding:13px 20px;border-radius:13px;font-size:13.5px;font-weight:600;z-index:80;
@@ -298,7 +303,8 @@
 
 <div class="scrim" id="scrim" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet">
-  <div class="grab"></div>
+  <button class="sheet-x" type="button" onclick="closeSheet()" aria-label="Close">&times;</button>
+  <div class="grab-tap" onclick="closeSheet()" title="Close"><div class="grab"></div></div>
   <h2 id="sheetTitle">New item</h2>
   <div class="sub" id="sheetSub">Add something to your needs list</div>
   <div class="field"><label>Item name</label>
@@ -321,7 +327,8 @@
     </div></div>
   <button class="save" id="listToggleBtn" onclick="listToggleFromSheet()" style="display:none;">Add to shopping list</button>
   <button class="save" id="saveBtn" onclick="saveItem()">Save to needs list</button>
-  <button class="save ghost" id="deleteBtn" onclick="deleteItem()" style="display:none;">Delete from needs list</button>
+  <button class="save cancel" id="cancelBtn" type="button" onclick="closeSheet()">Cancel</button>
+  <button class="save ghost" id="deleteBtn" onclick="deleteItem()" style="display:none;">Delete product</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -985,7 +992,7 @@ function editItem(id){
   document.getElementById('sheetSub').textContent= i.onList?'On your shopping list':'In your needs list';
   document.getElementById('saveBtn').textContent='Save changes';
   document.getElementById('deleteBtn').style.display='block';
-  document.getElementById('deleteBtn').textContent = 'Delete from needs list';
+  document.getElementById('deleteBtn').textContent = 'Delete product';
   document.getElementById('destField').style.display='none';
   const lt=document.getElementById('listToggleBtn');
   lt.style.display='block';
@@ -1027,11 +1034,12 @@ function saveItem(){
 function deleteItem(){
   if(!editingId)return;
   const i=items.find(x=>x.id===editingId);
-  if(i && i.onList){ i.onList=false; i.checked=false; persistItem(i); closeSheet(); refresh(); toast('Removed from list'); return; }
+  const nm=i?i.name:'this product';
+  if(!confirm('Delete "'+nm+'"?\n\nThis removes it completely, for both of you. (To just take it off the shopping list, use “Remove from shopping list” instead.)')) return;
   removeItem(editingId); closeSheet(); refresh(); toast('Deleted');
 }
-function openSheet(){ document.getElementById('scrim').classList.add('open'); document.getElementById('sheet').classList.add('open'); }
-function closeSheet(){ document.getElementById('scrim').classList.remove('open'); document.getElementById('sheet').classList.remove('open'); document.getElementById('fName').blur(); }
+function openSheet(){ const s=document.getElementById('sheet'); s.style.transition=''; s.style.transform=''; s.scrollTop=0; document.getElementById('scrim').classList.add('open'); s.classList.add('open'); }
+function closeSheet(){ const s=document.getElementById('sheet'); s.style.transition=''; s.style.transform=''; document.getElementById('scrim').classList.remove('open'); s.classList.remove('open'); document.getElementById('fName').blur(); }
 
 let toastT;
 function toast(msg){ const t=document.getElementById('toast'); t.innerHTML=esc(msg); t.classList.add('show');
@@ -1097,6 +1105,29 @@ function addNewFromSearch(e){
 // tap outside results (on the dock area) keeps it; tapping a result store header area closes.
 // close results when scrolling up to header? simpler: add a tap-to-dismiss on empty space via Escape-like back.
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeResults(); closeSheet(); }});
+
+/* Swipe the sheet down to dismiss (only from the top, and not while interacting with a field). */
+(function(){
+  const sheet=document.getElementById('sheet'); if(!sheet) return;
+  let startY=0, dragging=false, delta=0;
+  const noDrag = el => el && el.closest && el.closest('input,textarea,select,button,.seg,.stepper,.qty-edit');
+  sheet.addEventListener('touchstart',e=>{
+    if(sheet.scrollTop>3 || noDrag(e.target)){ dragging=false; return; }
+    startY=e.touches[0].clientY; dragging=true; delta=0; sheet.style.transition='none';
+  },{passive:true});
+  sheet.addEventListener('touchmove',e=>{
+    if(!dragging) return;
+    delta=e.touches[0].clientY-startY; if(delta<0) delta=0;
+    sheet.style.transform='translateY('+delta+'px)';
+  },{passive:true});
+  const end=()=>{
+    if(!dragging) return; dragging=false;
+    sheet.style.transition=''; sheet.style.transform='';
+    if(delta>110) closeSheet();
+  };
+  sheet.addEventListener('touchend',end);
+  sheet.addEventListener('touchcancel',end);
+})();
 
 // boot — paint the shell (shows a loading state until data arrives); the Firebase
 // module below then picks the backend and calls window.bootPantry(...).

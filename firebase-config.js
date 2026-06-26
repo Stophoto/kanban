@@ -14,10 +14,10 @@
 // ============================================================================
 
 export const firebaseConfig = {
-  apiKey:            "PASTE_API_KEY",
-  authDomain:        "PASTE_PROJECT.firebaseapp.com",
-  projectId:         "PASTE_PROJECT_ID",
-  storageBucket:     "PASTE_PROJECT.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId:             "PASTE_APP_ID"
+  apiKey:            "AIzaSyBmh4vHs5dDcBErT15TjRbOwRgQ66IpVlc",
+  authDomain:        "kanban-prefontaine.firebaseapp.com",
+  projectId:         "kanban-prefontaine",
+  storageBucket:     "kanban-prefontaine.firebasestorage.app",
+  messagingSenderId: "875680133722",
+  appId:             "1:875680133722:web:04ac80693c035db65e1e63"
 };

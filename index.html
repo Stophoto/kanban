@@ -49,8 +49,6 @@
   .h-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .wordmark{font-family:var(--font);font-weight:900;font-size:25px;letter-spacing:-1px;color:var(--black);text-transform:uppercase;}
   .wordmark .dot{color:var(--teal);}
-  .brand{display:flex;align-items:center;gap:10px;}
-  .brand-mark{width:32px;height:32px;border-radius:8px;display:block;flex-shrink:0;}
   .sync{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--grey);font-weight:700;letter-spacing:1.4px;text-transform:uppercase;}
   .sync .led{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px var(--teal-tint);}
 
@@ -245,7 +243,6 @@
   .ag-card{width:100%;max-width:330px;text-align:center;}
   .ag-mark{font-family:var(--font);font-weight:900;font-size:34px;letter-spacing:-1.5px;text-transform:uppercase;color:var(--black);}
   .ag-mark .dot{color:var(--teal);}
-  .ag-logo{width:78px;height:78px;border-radius:18px;display:block;margin:0 auto 16px;}
   .ag-sub{margin:12px 0 28px;color:var(--slate);font-size:14.5px;font-weight:500;line-height:1.5;}
   .ag-btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:54px;background:var(--black);
     color:var(--white);border:none;border-radius:30px;font-family:var(--font);font-weight:800;font-size:13px;letter-spacing:.7px;
@@ -260,10 +257,7 @@
 <div class="app">
   <header>
     <div class="h-row">
-      <div class="brand">
-        <img class="brand-mark" src="icons/icon-192.png" alt="" width="32" height="32">
-        <div class="wordmark">Kanban<span class="dot">.</span></div>
-      </div>
+      <div class="wordmark">Kanban<span class="dot">.</span></div>
       <div class="sync" onclick="syncTap()" title="Tap to sign out"><span class="led"></span>SYNCED</div>
     </div>
     <div class="toggle" id="toggle">
@@ -336,7 +330,6 @@
      an allowed account is signed in. The real lock is in firestore.rules. -->
 <div class="authgate" id="authgate" hidden>
   <div class="ag-card">
-    <img class="ag-logo" src="icons/icon-512.png" alt="" width="78" height="78">
     <div class="ag-mark">Kanban<span class="dot">.</span></div>
     <div class="ag-sub" id="agSub">A private list for Chris &amp; Carmyn. Sign in to continue.</div>
     <button class="ag-btn" id="authBtn" onclick="signInGoogle()">Continue with Google</button>

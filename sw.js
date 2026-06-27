@@ -11,7 +11,7 @@
 // Bump CACHE ('pantry-v1' -> 'pantry-v2' ...) any time you want to force every
 // phone to drop the old cached shell on next launch.
 
-const CACHE = 'pantry-v2';
+const CACHE = 'pantry-v3';
 const ASSETS = [
   './',
   './index.html',

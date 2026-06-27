@@ -72,22 +72,35 @@
   .chip.sel::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2.5px;background:var(--teal);}
 
   /* ---- category quick-filter dropdown ---- */
-  .catbar{display:flex;align-items:center;padding:12px 0 13px;}
-  .catselect{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--teal-tint);
+  .catbar{display:flex;align-items:center;padding:12px 0 13px;position:relative;}
+  .catselect{display:inline-flex;align-items:center;gap:8px;background:var(--teal-tint);cursor:pointer;
     border:1.5px solid var(--teal-tint2);border-radius:999px;padding:9px 13px;max-width:100%;
     transition:background .15s,border-color .15s;}
   .catselect:active{background:var(--teal-tint2);}
   .catselect.active{background:var(--teal);border-color:var(--teal);}
-  .catselect .cat-ico,.catselect .cat-chev{display:flex;color:var(--teal);flex-shrink:0;}
+  .catselect .cat-ico,.catselect .cat-chev{display:flex;color:var(--teal);flex-shrink:0;pointer-events:none;}
   .catselect.active .cat-ico,.catselect.active .cat-chev{color:var(--white);}
   .catselect .cat-ico svg{width:15px;height:15px;}
   .catselect .cat-chev svg{width:15px;height:15px;}
   .catselect .cat-lbl{font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--teal);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;}
   .catselect.active .cat-lbl{color:var(--white);}
-  /* invisible native <select> overlays the pill so the OS picker drives it */
-  .catselect select{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;background:none;
-    -webkit-appearance:none;appearance:none;font-size:16px;cursor:pointer;}
+  /* custom dropdown menu — lets us pin a bold "All categories" at the top */
+  .catmenu-scrim{position:fixed;inset:0;z-index:44;display:none;}
+  .catmenu-scrim.open{display:block;}
+  .catmenu{position:absolute;top:calc(100% - 4px);left:0;min-width:240px;max-width:90vw;background:var(--white);
+    border:1px solid var(--divider);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.20);
+    max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:45;padding:0 6px 6px;display:none;}
+  .catmenu.open{display:block;}
+  .catmenu-item{display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+    font-family:var(--font);font-size:14.5px;font-weight:600;color:var(--slate);padding:12px 14px;border-radius:9px;}
+  .catmenu-item:active{background:var(--teal-tint);}
+  .catmenu-item.sel{color:var(--teal);font-weight:800;}
+  /* "All categories" stays pinned at the top while the rest of the list scrolls */
+  .catmenu-item.pinned{position:sticky;top:0;background:var(--white);color:var(--black);font-weight:800;
+    font-size:12.5px;letter-spacing:.5px;text-transform:uppercase;border-radius:0;margin:0 -6px 5px;padding:15px 20px;
+    border-bottom:1.5px solid var(--divider);z-index:1;}
+  .catmenu-item.pinned.sel{color:var(--teal);}
 
   .view{display:none;} .view.active{display:block;animation:fade .2s ease;}
   @keyframes fade{from{opacity:0;}to{opacity:1;}}
@@ -269,11 +282,11 @@
   .routing-help{font-size:12px;color:var(--grey);line-height:1.5;margin-top:9px;padding-left:2px;font-weight:500;}
   .save{width:100%;background:var(--black);color:var(--white);border:none;border-radius:13px;padding:17px;font-size:13px;
     font-weight:800;font-family:var(--font);cursor:pointer;margin-top:10px;letter-spacing:1px;text-transform:uppercase;}
-  .save:active{opacity:.9;} .save.ghost{background:none;color:var(--need);margin-top:4px;padding:13px;}
-  .save.cancel{background:none;color:var(--grey);margin-top:2px;padding:13px;}
-  /* primary Save button: red, flips green while you press / right after saving */
-  #saveBtn{background:var(--save-red);transition:background .12s;}
-  #saveBtn:active,#saveBtn.ok{background:var(--save-green);opacity:1;}
+  .save:active{opacity:.9;} .save.ghost{background:none;color:var(--need);margin-top:10px;padding:13px;}
+  .save.cancel{background:none;color:var(--grey);margin-top:16px;padding:13px;}
+  /* primary Save button: green, deepens while you press / right after saving */
+  #saveBtn{background:var(--save-green);transition:background .12s;}
+  #saveBtn:active,#saveBtn.ok{background:#1f7a45;opacity:1;}
 
   .toast{position:fixed;bottom:calc(96px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(12px);
     background:var(--black);color:var(--white);padding:13px 20px;border-radius:13px;font-size:13.5px;font-weight:600;z-index:80;
@@ -333,12 +346,13 @@
     </div>
     <div class="chips" id="chips"></div>
     <div class="catbar">
-      <div class="catselect" id="catSelect">
+      <div class="catselect" id="catSelect" onclick="toggleCatMenu(event)" role="button" aria-haspopup="listbox">
         <span class="cat-ico" id="catIco"></span>
         <span class="cat-lbl" id="catLbl">All categories</span>
         <span class="cat-chev" id="catChev"></span>
-        <select id="catFilter" aria-label="Filter by category" onchange="setCatFilter(this.value)"></select>
       </div>
+      <div class="catmenu-scrim" id="catMenuScrim" onclick="closeCatMenu()"></div>
+      <div class="catmenu" id="catMenu" role="listbox"></div>
     </div>
   </header>
 
@@ -854,6 +868,12 @@ async function bootPantry(opts){
   opts = opts || { backend:'local', reason:'no-config' };
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(console.error);
+    // when a freshly-deployed version takes over, reload once so the new UI
+    // shows automatically instead of getting stuck on an old cached copy.
+    let _swReloading=false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(_swReloading) return; _swReloading=true; window.location.reload();
+    });
   }
   if(opts.backend==='firebase'){
     backend='firebase';
@@ -912,22 +932,26 @@ function renderChips(){
 }
 function setFilter(f){ filter=f; refresh(); }
 
-// ---- category quick-filter ----
+// ---- category quick-filter (custom dropdown, so "All categories" can stay pinned) ----
 function ensureCatFilter(){
-  const sel=document.getElementById('catFilter'); if(!sel) return;
-  if(!sel.options.length){
-    sel.innerHTML=`<option value="all">All categories</option>`+
-      FILTER_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    document.getElementById('catIco').innerHTML=ICON.funnel;
-    document.getElementById('catChev').innerHTML=ICON.chevD;
-  }
-  sel.value=catFilter;
+  const ico=document.getElementById('catIco');
+  if(ico && !ico.innerHTML){ ico.innerHTML=ICON.funnel; document.getElementById('catChev').innerHTML=ICON.chevD; }
   syncCatLabel();
 }
 function syncCatLabel(){
   document.getElementById('catLbl').textContent = catFilter==='all' ? 'All categories' : catFilter;
   document.getElementById('catSelect').classList.toggle('active', catFilter!=='all');
 }
+let catMenuOpen=false;
+function buildCatMenu(){
+  document.getElementById('catMenu').innerHTML =
+    `<button class="catmenu-item pinned${catFilter==='all'?' sel':''}" data-val="all" onclick="chooseCat(this.dataset.val)">All categories</button>`+
+    FILTER_CATEGORIES.map(c=>`<button class="catmenu-item${catFilter===c?' sel':''}" data-val="${esc(c)}" onclick="chooseCat(this.dataset.val)">${esc(c)}</button>`).join('');
+}
+function toggleCatMenu(e){ if(e) e.stopPropagation(); catMenuOpen ? closeCatMenu() : openCatMenu(); }
+function openCatMenu(){ buildCatMenu(); document.getElementById('catMenu').classList.add('open'); document.getElementById('catMenuScrim').classList.add('open'); catMenuOpen=true; }
+function closeCatMenu(){ document.getElementById('catMenu').classList.remove('open'); document.getElementById('catMenuScrim').classList.remove('open'); catMenuOpen=false; }
+function chooseCat(v){ closeCatMenu(); setCatFilter(v); }
 function setCatFilter(v){ catFilter=v; syncCatLabel(); refresh(); }
 // does an item pass the active category filter? "Liquor" matches all liquor subcategories.
 function catMatch(i){

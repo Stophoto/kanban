@@ -382,9 +382,6 @@
     <input type="text" id="fDetail" placeholder="e.g. Tres Extra Hold, level 4" autocomplete="off"></div>
   <div class="field"><label>Note for shopping <span class="opt-lbl">&mdash; optional</span></label>
     <input type="text" id="fNote" placeholder="e.g. check the back shelf, get the big one" autocomplete="off"></div>
-  <div class="field"><label>Photo <span class="opt-lbl">&mdash; optional, e.g. snap the label</span></label>
-    <div class="photofield" id="fPhotoBox"></div>
-    <input type="file" accept="image/*" id="fPhotoInput" onchange="onPhotoPick(this)" style="display:none"></div>
   <div class="field" id="destField" style="display:none;"><label>Add it to</label>
     <div class="seg" id="fDest">
       <div class="opt sel" data-dest="needs" onclick="pickDest('needs')">Needs list</div>
@@ -394,6 +391,9 @@
   <button class="save" id="listToggleBtn" onclick="listToggleFromSheet()" style="display:none;">Add to shopping list</button>
   <button class="save cancel" id="cancelBtn" type="button" onclick="closeSheet()">Cancel</button>
   <button class="save ghost" id="deleteBtn" onclick="deleteItem()" style="display:none;">Delete product</button>
+  <div class="field" style="margin-top:16px;margin-bottom:0;"><label>Photo <span class="opt-lbl">&mdash; optional, e.g. snap the label</span></label>
+    <div class="photofield" id="fPhotoBox"></div>
+    <input type="file" accept="image/*" id="fPhotoInput" onchange="onPhotoPick(this)" style="display:none"></div>
 </div>
 
 <div class="toast" id="toast"></div>

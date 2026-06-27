@@ -467,6 +467,11 @@ const STORE_ORDER = ['grocery','costco','liquor','shoppers'];
 const DEPT_ORDER = ['Produce','Dairy','Meat','Frozen','Bakery','Snacks','Condiments','Dry','Breakfast','Baking','Beverages','Spirits','Wine','Beer & Cider','Health','Toiletries','Cosmetics','Laundry','Cleaning','Paper','Kitchen','General'];
 // Categories offered in the add/edit picker and the quick-filter dropdown — alphabetical.
 const CATEGORIES = ['Baking','Beer & Cider','Beverages','Breakfast','Cleaning','Condiments','Cosmetics','Dairy','Dry','Frozen','General','Health','Kitchen','Laundry','Meat','Paper','Produce','Snacks','Spirits','Toiletries','Wine'];
+// Beer/Wine/Spirits stay as real item subcategories (they still group as sections
+// under the Liquor store), but the quick-filter collapses them into one "Liquor"
+// button to keep that list short.
+const LIQUOR_SUBCATS = ['Beer & Cider','Spirits','Wine'];
+const FILTER_CATEGORIES = ['Baking','Beverages','Breakfast','Cleaning','Condiments','Cosmetics','Dairy','Dry','Frozen','General','Health','Kitchen','Laundry','Liquor','Meat','Paper','Produce','Snacks','Toiletries'];
 
 const SEED = [
   // ========== GROCERY (Superstore / Walmart / Co-op) ==========
@@ -912,7 +917,7 @@ function ensureCatFilter(){
   const sel=document.getElementById('catFilter'); if(!sel) return;
   if(!sel.options.length){
     sel.innerHTML=`<option value="all">All categories</option>`+
-      CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      FILTER_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
     document.getElementById('catIco').innerHTML=ICON.funnel;
     document.getElementById('catChev').innerHTML=ICON.chevD;
   }
@@ -924,6 +929,12 @@ function syncCatLabel(){
   document.getElementById('catSelect').classList.toggle('active', catFilter!=='all');
 }
 function setCatFilter(v){ catFilter=v; syncCatLabel(); refresh(); }
+// does an item pass the active category filter? "Liquor" matches all liquor subcategories.
+function catMatch(i){
+  if(catFilter==='all') return true;
+  if(catFilter==='Liquor') return LIQUOR_SUBCATS.includes(i.dept);
+  return i.dept===catFilter;
+}
 function loadingHTML(){ return `<div class="loading">Loading your list <span class="l-dot"></span><span class="l-dot"></span><span class="l-dot"></span></div>`; }
 
 function render(){ updateListCount(); if(mode==='catalog') renderCatalog(); else renderList(); }
@@ -936,7 +947,7 @@ function updateListCount(){
 function renderCatalog(){
   const body=document.getElementById('catBody');
   if(!synced){ body.innerHTML=loadingHTML(); return; }
-  let pool=items.filter(i=>(filter==='all'||i.store===filter)&&(catFilter==='all'||i.dept===catFilter));
+  let pool=items.filter(i=>(filter==='all'||i.store===filter)&&catMatch(i));
   if(!pool.length){ body.innerHTML=`<div class="empty"><div class="e-ico">${ICON.box}</div><p>${catFilter==='all'?'Nothing here yet.':'No '+esc(catFilter)+' items here.'}</p></div>`; return; }
 
   let html='';
@@ -1015,7 +1026,7 @@ function renderList(){
   const stores = filter==='all' ? STORE_ORDER : [filter];
   stores.forEach(s=>{
     const visible = (filter==='all' ? onList.filter(i=>i.store===s) : onList.filter(i=>canBuyAt(i,s)))
-      .filter(i=>catFilter==='all'||i.dept===catFilter);
+      .filter(catMatch);
     if(!visible.length) return;
     const depts=DEPT_ORDER.filter(d=>visible.some(i=>i.dept===d));
     if(filter==='all'){ html+=storeHeader(s,visible.length); }

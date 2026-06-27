@@ -246,6 +246,19 @@
   /* small camera glyph on rows that have a photo */
   .r-cam{display:inline-flex;vertical-align:middle;margin-left:6px;color:var(--grey-light);}
   .r-cam svg{width:13px;height:13px;}
+  /* in-app "are you sure?" confirm dialog (reliable in standalone PWAs, unlike confirm()) */
+  .confirm{position:fixed;inset:0;z-index:100;background:rgba(26,26,26,.45);backdrop-filter:blur(2px);
+    display:none;align-items:center;justify-content:center;padding:28px;}
+  .confirm.open{display:flex;}
+  .confirm-card{width:100%;max-width:330px;background:var(--white);border-radius:20px;padding:24px 22px 16px;text-align:center;
+    box-shadow:0 22px 60px rgba(0,0,0,.32);}
+  .confirm-card h3{font-family:var(--font);font-weight:800;font-size:19px;letter-spacing:-.3px;color:var(--black);margin-bottom:8px;}
+  .confirm-card p{font-size:13.5px;line-height:1.5;color:var(--grey);font-weight:500;margin-bottom:20px;}
+  .confirm-del{width:100%;background:var(--save-red);color:var(--white);border:none;border-radius:13px;padding:15px;
+    font-size:13px;font-weight:800;font-family:var(--font);letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+  .confirm-del:active{opacity:.9;}
+  .confirm-cancel{width:100%;background:none;border:none;color:var(--slate);font-family:var(--font);font-weight:700;
+    font-size:13px;letter-spacing:.5px;text-transform:uppercase;padding:14px;margin-top:2px;cursor:pointer;}
   .qty-edit{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1.5px solid var(--divider);border-radius:12px;padding:10px 14px;}
   .qty-edit .qe-txt{font-size:14.5px;font-weight:600;color:var(--slate);}
   .stepper{display:flex;align-items:center;gap:4px;flex-shrink:0;}
@@ -402,6 +415,16 @@
 <div class="photoview" id="photoview" onclick="closePhotoView()">
   <button class="pv-x" type="button" aria-label="Close">&times;</button>
   <img id="photoviewImg" alt="">
+</div>
+
+<!-- in-app confirmation (used for Delete) -->
+<div class="confirm" id="confirm" onclick="closeConfirm()">
+  <div class="confirm-card" onclick="event.stopPropagation()">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMsg"></p>
+    <button class="confirm-del" type="button" onclick="doConfirm()">Delete forever</button>
+    <button class="confirm-cancel" type="button" onclick="closeConfirm()">Keep it</button>
+  </div>
 </div>
 
 <!-- Google sign-in gate. Shown only when Firebase is configured; covers the app until
@@ -1209,9 +1232,22 @@ function deleteItem(){
   if(!editingId)return;
   const i=items.find(x=>x.id===editingId);
   const nm=i?i.name:'this product';
-  if(!confirm('Delete "'+nm+'"?\n\nThis removes it completely, for both of you. (To just take it off the shopping list, use “Remove from shopping list” instead.)')) return;
-  removeItem(editingId); closeSheet(); refresh(); toast('Deleted');
+  const id=editingId;
+  askConfirm('Delete “'+nm+'”?',
+    'This removes it completely, for both of you. To just take it off the shopping list, use “Remove from shopping list” instead.',
+    ()=>{ removeItem(id); closeSheet(); refresh(); toast('Deleted'); });
 }
+// reusable in-app confirmation — replaces window.confirm(), which iOS home-screen
+// PWAs often suppress (so deletes were happening with no prompt).
+let confirmAction=null;
+function askConfirm(title,msg,onYes){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  confirmAction=onYes;
+  document.getElementById('confirm').classList.add('open');
+}
+function doConfirm(){ const a=confirmAction; closeConfirm(); if(a) a(); }
+function closeConfirm(){ document.getElementById('confirm').classList.remove('open'); confirmAction=null; }
 function openSheet(){ const s=document.getElementById('sheet'); s.style.transition=''; s.style.transform=''; s.scrollTop=0; document.getElementById('scrim').classList.add('open'); s.classList.add('open'); }
 function closeSheet(){ const s=document.getElementById('sheet'); s.style.transition=''; s.style.transform=''; document.getElementById('scrim').classList.remove('open'); s.classList.remove('open'); document.getElementById('fName').blur(); }
 

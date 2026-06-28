@@ -510,22 +510,23 @@ const STORES = {
 };
 const STORE_ORDER = ['grocery','costco','liquor','shoppers'];
 // In-store section order (rough physical layout) — used to lay out the dept headers.
-const DEPT_ORDER = ['Produce','Dairy','Meat','Frozen','Bakery','Snacks','Condiments','Canned goods','Dry','Spices & dry ingredients','Breakfast','Baking','Beverages','Spirits','Wine','Beer & Cider','Toiletries','Cosmetics','Household','Paper','General'];
+const DEPT_ORDER = ['Produce','Dairy','Meat','Frozen','Bakery','Snacks','Condiments','Canned goods','Spices & dry ingredients','Breakfast','Baking','Beverages','Spirits','Wine','Beer & Cider','Toiletries','Cosmetics','Household','Paper','General'];
 // Categories offered in the add/edit picker and the quick-filter dropdown — alphabetical.
-const CATEGORIES = ['Baking','Beer & Cider','Beverages','Breakfast','Canned goods','Condiments','Cosmetics','Dairy','Dry','Frozen','General','Household','Meat','Paper','Produce','Snacks','Spices & dry ingredients','Spirits','Toiletries','Wine'];
+const CATEGORIES = ['Baking','Beer & Cider','Beverages','Breakfast','Canned goods','Condiments','Cosmetics','Dairy','Frozen','General','Household','Meat','Paper','Produce','Snacks','Spices & dry ingredients','Spirits','Toiletries','Wine'];
 // Beer/Wine/Spirits stay as real item subcategories (they still group as sections
 // under the Liquor store), but the quick-filter collapses them into one "Liquor"
 // button to keep that list short.
 const LIQUOR_SUBCATS = ['Beer & Cider','Spirits','Wine'];
-const FILTER_CATEGORIES = ['Baking','Beverages','Breakfast','Canned goods','Condiments','Cosmetics','Dairy','Dry','Frozen','General','Household','Liquor','Meat','Paper','Produce','Snacks','Spices & dry ingredients','Toiletries'];
+const FILTER_CATEGORIES = ['Baking','Beverages','Breakfast','Canned goods','Condiments','Cosmetics','Dairy','Frozen','General','Household','Liquor','Meat','Paper','Produce','Snacks','Spices & dry ingredients','Toiletries'];
 // Category reorg (2026): old departments folded into the new taxonomy. Applied on
 // load (normalizeItem) so live records migrate without a bulk database rewrite.
-//   Health → Toiletries · Cleaning/Laundry/Kitchen → Household
+//   Health → Toiletries · Cleaning/Laundry/Kitchen → Household · Dry → Spices & dry ingredients
 const DEPT_MAP = {
   'Health':'Toiletries',
   'Cleaning':'Household',
   'Laundry':'Household',
   'Kitchen':'Household',
+  'Dry':'Spices & dry ingredients',
 };
 // One-time rename: existing items were stored "Brand first"; we now show the
 // descriptive name first and the brand last. Applied on load (normalizeItem) so
@@ -560,8 +561,6 @@ const ITEM_RECAT = {
   "Peppercorns":      {from:"Condiments", to:"Spices & dry ingredients"},
   "Beef bouillon":    {from:"Condiments", to:"Spices & dry ingredients"},
   "Chicken bouillon": {from:"Condiments", to:"Spices & dry ingredients"},
-  "Pasta":            {from:"Dry",        to:"Spices & dry ingredients"},
-  "Bacon bits":       {from:"Dry",        to:"Spices & dry ingredients"},
   "Tuna":             {from:"Meat",       to:"Canned goods"},
   "Green olives":     {from:"Condiments", to:"Canned goods"},
 };

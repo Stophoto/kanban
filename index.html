@@ -333,7 +333,12 @@
   .ag-note strong{color:var(--slate);font-weight:700;}
 
   /* ---- print order list ---- */
-  .printbtn-row{display:flex;justify-content:flex-end;margin-bottom:14px;}
+  .printbtn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .printgroup{display:inline-flex;align-items:center;gap:4px;background:var(--card-light);border-radius:999px;padding:3px;}
+  .printgroup .pg-lbl{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);padding:0 6px 0 8px;}
+  .pg-opt{border:none;background:none;font-family:var(--font);font-weight:800;font-size:11.5px;letter-spacing:.3px;
+    text-transform:uppercase;color:var(--grey);padding:7px 13px;border-radius:999px;cursor:pointer;transition:all .16s;}
+  .pg-opt.sel{background:var(--white);color:var(--teal);box-shadow:0 2px 6px rgba(0,0,0,.10);}
   .printbtn{display:inline-flex;align-items:center;gap:8px;background:var(--card-light);border:none;border-radius:999px;
     padding:10px 16px;font-family:var(--font);font-weight:800;font-size:12.5px;letter-spacing:.4px;text-transform:uppercase;
     color:var(--slate);cursor:pointer;transition:all .18s;}
@@ -727,6 +732,7 @@ let backend = 'local';     // 'firebase' once a real config connects; otherwise 
 let mode = localStorage.getItem('pantry_mode') || 'catalog';
 let filter = 'all';
 let catFilter = 'all';     // active category quick-filter ('all' = every category)
+let printGroupBy = localStorage.getItem('pantry_print_group') || 'cat';  // 'cat' | 'store' — printable list grouping
 let editingId = null;
 let draft = {store:'grocery', routing:'anywhere', qty:1, dest:'needs'};
 // collapsed departments: stored as a set of "store|dept" keys
@@ -1161,33 +1167,56 @@ function renderList(){
     });
   });
   if(!html){ html=`<div class="empty"><div class="e-ico">${ICON.box}</div><p>No ${catFilter==='all'?'':esc(catFilter)+' '}items on your shopping list${filter==='all'?'':' for '+esc(STORES[filter].name)}.</p></div>`; }
-  const printBtn=`<div class="printbtn-row"><button class="printbtn" onclick="printList()">${ICON.print}Print order list</button></div>`;
+  const g=printGroupBy;
+  const printBtn=`<div class="printbtn-row">
+    <div class="printgroup" role="group" aria-label="Group printable list by">
+      <span class="pg-lbl">Group by</span>
+      <button class="pg-opt${g==='cat'?' sel':''}" data-g="cat" onclick="setPrintGroup('cat')">Category</button>
+      <button class="pg-opt${g==='store'?' sel':''}" data-g="store" onclick="setPrintGroup('store')">Store</button>
+    </div>
+    <button class="printbtn" onclick="printList()">${ICON.print}Print order list</button>
+  </div>`;
   body.innerHTML=printBtn+html;
 }
-// Build a clean, paper-friendly order list grouped by category (across every store)
-// and hand it to the browser's print dialog. Prints the whole shopping list,
-// ignoring the on-screen store/category filters, so nothing gets left off the order.
+function setPrintGroup(g){
+  printGroupBy=g; try{ localStorage.setItem('pantry_print_group',g); }catch(e){}
+  document.querySelectorAll('.pg-opt').forEach(b=>b.classList.toggle('sel', b.dataset.g===g));
+}
+// Build a clean, paper-friendly order list and hand it to the browser's print dialog.
+// Groups by category or by store (printGroupBy); the per-row tag flips to show the OTHER
+// dimension. Always prints the whole shopping list, ignoring the on-screen filters.
 function printList(){
   const onList=items.filter(i=>i.onList);
   if(!onList.length){ toast('Nothing on your list to print'); return; }
-  const cats=DEPT_ORDER.filter(d=>onList.some(i=>i.dept===d));
-  // safety net: surface any dept not in DEPT_ORDER so an item can never vanish
-  onList.forEach(i=>{ if(!cats.includes(i.dept)) cats.push(i.dept); });
+  const byStore = printGroupBy==='store';
+  // outer groups: store names (in aisle/store order) or categories (in physical layout order)
+  let groups;
+  if(byStore){
+    const keys=STORE_ORDER.filter(s=>onList.some(i=>i.store===s));
+    onList.forEach(i=>{ if(!keys.includes(i.store)) keys.push(i.store); });   // never drop an item
+    groups=keys.map(s=>({label:(STORES[s]||{}).name||s, items:onList.filter(i=>i.store===s)
+      .sort((a,b)=>(DEPT_ORDER.indexOf(a.dept)-DEPT_ORDER.indexOf(b.dept))||a.name.localeCompare(b.name))}));
+  } else {
+    const keys=DEPT_ORDER.filter(d=>onList.some(i=>i.dept===d));
+    onList.forEach(i=>{ if(!keys.includes(i.dept)) keys.push(i.dept); });
+    groups=keys.map(d=>({label:d, items:onList.filter(i=>i.dept===d).sort((a,b)=>a.name.localeCompare(b.name))}));
+  }
   let rows='';
-  cats.forEach(d=>{
-    const dg=onList.filter(i=>i.dept===d).sort((a,b)=>a.name.localeCompare(b.name));
-    rows+=`<div class="pr-cat">${esc(d)}</div>`;
-    dg.forEach(i=>{
+  groups.forEach(grp=>{
+    rows+=`<div class="pr-cat">${esc(grp.label)}</div>`;
+    grp.items.forEach(i=>{
       const qty=i.qty>1?`<span class="pr-qty">${i.qty}×</span>`:'';
       const detail=i.detail?`<div class="pr-detail">${esc(i.detail)}</div>`:'';
-      const store=`<span class="pr-store">${esc((STORES[i.store]||{}).name||i.store)}</span>`;
-      rows+=`<div class="pr-row"><span class="pr-box"></span><div class="pr-txt"><div class="pr-line">${qty}<span class="pr-name">${esc(i.name)}</span></div>${detail}</div>${store}</div>`;
+      const tagText = byStore ? i.dept : ((STORES[i.store]||{}).name||i.store);
+      const tag=`<span class="pr-store">${esc(tagText)}</span>`;
+      rows+=`<div class="pr-row"><span class="pr-box"></span><div class="pr-txt"><div class="pr-line">${qty}<span class="pr-name">${esc(i.name)}</span></div>${detail}</div>${tag}</div>`;
     });
   });
   const n=onList.length;
   const dateStr=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const meta=`${n} item${n>1?'s':''} &middot; by ${byStore?'store':'category'} &middot; ${dateStr}`;
   document.getElementById('printArea').innerHTML=
-    `<div class="pr-head"><div class="pr-title">Shopping list</div><div class="pr-meta">${n} item${n>1?'s':''} &middot; ${dateStr}</div></div>${rows}`;
+    `<div class="pr-head"><div class="pr-title">Shopping list</div><div class="pr-meta">${meta}</div></div>${rows}`;
   window.print();
 }
 function listRow(i,ctx){

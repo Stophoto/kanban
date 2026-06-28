@@ -553,6 +553,18 @@ const RENAME_MAP = {
   "Tide powder":"Laundry powder - Tide",
   "Tide pods":"Laundry pods - Tide",
 };
+// One-time per-item move into the new Spices & dry ingredients / Canned goods sections.
+// Guarded on the item's CURRENT dept so it fires once and never overrides a later manual
+// re-file (same idea as DEPT_MAP, but targeted at single items). Keyed on item name.
+const ITEM_RECAT = {
+  "Peppercorns":      {from:"Condiments", to:"Spices & dry ingredients"},
+  "Beef bouillon":    {from:"Condiments", to:"Spices & dry ingredients"},
+  "Chicken bouillon": {from:"Condiments", to:"Spices & dry ingredients"},
+  "Pasta":            {from:"Dry",        to:"Spices & dry ingredients"},
+  "Bacon bits":       {from:"Dry",        to:"Spices & dry ingredients"},
+  "Tuna":             {from:"Meat",       to:"Canned goods"},
+  "Green olives":     {from:"Condiments", to:"Canned goods"},
+};
 
 const SEED = [
   // ========== GROCERY (Superstore / Walmart / Co-op) ==========
@@ -587,13 +599,13 @@ const SEED = [
   {name:"Avocado oil", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
   {name:"Olive oil", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
   {name:"Butter chicken sauce - KFI", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Peppercorns", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Green olives", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Peppercorns", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
+  {name:"Green olives", store:"grocery", routing:"anywhere", dept:"Canned goods", detail:""},
   {name:"Sauerkraut", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Beef bouillon", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Chicken bouillon", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Pasta", store:"grocery", routing:"anywhere", dept:"Dry", detail:""},
-  {name:"Bacon bits", store:"grocery", routing:"anywhere", dept:"Dry", detail:""},
+  {name:"Beef bouillon", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
+  {name:"Chicken bouillon", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
+  {name:"Pasta", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
+  {name:"Bacon bits", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
   {name:"Maple syrup", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
   {name:"Instant oatmeal", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
   {name:"Cinnamon Toast Crunch", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
@@ -624,7 +636,7 @@ const SEED = [
   {name:"Shredded cheddar", store:"costco", routing:"wait", dept:"Dairy", detail:""},
   {name:"White cheese", store:"costco", routing:"wait", dept:"Dairy", detail:""},
   {name:"Salmon or steak bites", store:"costco", routing:"wait", dept:"Meat", detail:""},
-  {name:"Tuna", store:"costco", routing:"wait", dept:"Meat", detail:""},
+  {name:"Tuna", store:"costco", routing:"wait", dept:"Canned goods", detail:""},
 
   // ========== LIQUOR (Alberta — must be liquor store, locked) ==========
   {name:"Bourbon", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
@@ -778,6 +790,7 @@ function normalizeItem(i){
   if(RENAME_MAP[i.name]) i.name=RENAME_MAP[i.name];   // brand-first → descriptive-first
   if(!i.dept) i.dept='General';
   if(DEPT_MAP[i.dept]) i.dept=DEPT_MAP[i.dept];        // category reorg → new taxonomy
+  const rc=ITEM_RECAT[i.name]; if(rc && i.dept===rc.from) i.dept=rc.to;  // one-time per-item move
   if(i.note===undefined) i.note='';
   return i;
 }

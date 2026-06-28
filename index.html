@@ -350,10 +350,15 @@
   #printArea .pr-row{display:flex;align-items:flex-start;gap:11px;padding:5px 2px;
     border-bottom:1px dotted #d8d8d8;break-inside:avoid;page-break-inside:avoid;}
   #printArea .pr-box{width:13px;height:13px;border:1.6px solid #000;border-radius:3px;flex:none;margin-top:2px;}
+  #printArea .pr-txt{flex:1;min-width:0;}
   #printArea .pr-line{font-size:14px;line-height:1.35;}
   #printArea .pr-name{font-weight:600;color:#000;}
   #printArea .pr-qty{font-weight:900;color:#000;margin-right:2px;}
   #printArea .pr-detail{font-size:11.5px;color:#555;font-weight:500;line-height:1.3;margin-top:1px;}
+  /* store the item is ideally bought at — outlined tag (no fill, so it prints reliably) */
+  #printArea .pr-store{flex:none;align-self:center;margin-left:10px;font-size:9.5px;font-weight:800;
+    letter-spacing:.7px;text-transform:uppercase;color:#222;border:1.2px solid #b9b9b9;border-radius:999px;
+    padding:2px 9px;white-space:nowrap;}
   @media print{
     body > *:not(#printArea){display:none !important;}
     #printArea{display:block !important;}
@@ -1175,7 +1180,8 @@ function printList(){
     dg.forEach(i=>{
       const qty=i.qty>1?`<span class="pr-qty">${i.qty}×</span>`:'';
       const detail=i.detail?`<div class="pr-detail">${esc(i.detail)}</div>`:'';
-      rows+=`<div class="pr-row"><span class="pr-box"></span><div><div class="pr-line">${qty}<span class="pr-name">${esc(i.name)}</span></div>${detail}</div></div>`;
+      const store=`<span class="pr-store">${esc((STORES[i.store]||{}).name||i.store)}</span>`;
+      rows+=`<div class="pr-row"><span class="pr-box"></span><div class="pr-txt"><div class="pr-line">${qty}<span class="pr-name">${esc(i.name)}</span></div>${detail}</div>${store}</div>`;
     });
   });
   const n=onList.length;

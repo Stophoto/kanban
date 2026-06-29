@@ -332,18 +332,18 @@
   .ag-note{margin-top:18px;color:var(--grey);font-size:12.5px;font-weight:500;line-height:1.55;}
   .ag-note strong{color:var(--slate);font-weight:700;}
 
-  /* ---- print order list ---- */
-  .printbtn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-  .printgroup{display:inline-flex;align-items:center;gap:4px;background:var(--card-light);border-radius:999px;padding:3px;}
-  .printgroup .pg-lbl{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--grey);padding:0 6px 0 8px;}
-  .pg-opt{border:none;background:none;font-family:var(--font);font-weight:800;font-size:11.5px;letter-spacing:.3px;
-    text-transform:uppercase;color:var(--grey);padding:7px 13px;border-radius:999px;cursor:pointer;transition:all .16s;}
-  .pg-opt.sel{background:var(--white);color:var(--teal);box-shadow:0 2px 6px rgba(0,0,0,.10);}
-  .printbtn{display:inline-flex;align-items:center;gap:8px;background:var(--card-light);border:none;border-radius:999px;
-    padding:10px 16px;font-family:var(--font);font-weight:800;font-size:12.5px;letter-spacing:.4px;text-transform:uppercase;
-    color:var(--slate);cursor:pointer;transition:all .18s;}
-  .printbtn:hover{background:var(--teal-tint);color:var(--teal);}
-  .printbtn svg{width:16px;height:16px;}
+  /* ---- print order list — one compact right-aligned row ---- */
+  .printbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;margin:2px 0 14px;}
+  .printgroup{display:inline-flex;align-items:center;gap:2px;background:var(--card-light);border-radius:999px;padding:3px;min-width:0;}
+  .printgroup .pg-lbl{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--grey);padding:0 5px 0 8px;white-space:nowrap;}
+  .pg-opt{border:none;background:none;font-family:var(--font);font-weight:800;font-size:11px;letter-spacing:.2px;
+    text-transform:uppercase;color:var(--grey);padding:6px 11px;border-radius:999px;cursor:pointer;transition:all .16s;white-space:nowrap;}
+  .pg-opt.sel{background:var(--white);color:var(--teal);box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .printbtn{display:inline-flex;align-items:center;gap:6px;background:var(--teal);border:none;border-radius:999px;flex:none;
+    padding:8px 15px;font-family:var(--font);font-weight:800;font-size:11px;letter-spacing:.4px;text-transform:uppercase;
+    color:var(--white);cursor:pointer;transition:all .18s;box-shadow:0 4px 12px rgba(54,179,175,.32);}
+  .printbtn:hover{filter:brightness(1.06);}
+  .printbtn svg{width:15px;height:15px;}
   /* off-screen container, painted only when printing */
   #printArea{display:none;color:#000;font-family:var(--font);}
   #printArea .pr-head{display:flex;justify-content:space-between;align-items:baseline;
@@ -1168,13 +1168,13 @@ function renderList(){
   });
   if(!html){ html=`<div class="empty"><div class="e-ico">${ICON.box}</div><p>No ${catFilter==='all'?'':esc(catFilter)+' '}items on your shopping list${filter==='all'?'':' for '+esc(STORES[filter].name)}.</p></div>`; }
   const g=printGroupBy;
-  const printBtn=`<div class="printbtn-row">
+  const printBtn=`<div class="printbar">
     <div class="printgroup" role="group" aria-label="Group printable list by">
-      <span class="pg-lbl">Group by</span>
+      <span class="pg-lbl">Group</span>
       <button class="pg-opt${g==='cat'?' sel':''}" data-g="cat" onclick="setPrintGroup('cat')">Category</button>
       <button class="pg-opt${g==='store'?' sel':''}" data-g="store" onclick="setPrintGroup('store')">Store</button>
     </div>
-    <button class="printbtn" onclick="printList()">${ICON.print}Print order list</button>
+    <button class="printbtn" onclick="printList()" title="Print order list" aria-label="Print order list">${ICON.print}<span>Print</span></button>
   </div>`;
   body.innerHTML=printBtn+html;
 }

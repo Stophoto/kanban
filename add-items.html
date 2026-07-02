@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>Add items · Kanban</title>
+<!--
+  One-time helper: adds a fixed batch of new items to the shared Kanban list.
+  Uses the same Firebase project + Google sign-in as the app, so the household
+  security rules still apply (only Chris & Carmyn can write). Safe to run twice —
+  it skips any item (matched on name + store) that already exists. Remove this
+  file once the items are in.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#1A1A1A; --white:#FFFFFF; --cream:#F6F1E9; --teal:#36B3AF;
+    --slate:#4A4A4A; --grey:#908F8A; --card-light:#F5F0E8; --teal-tint:#E4F4F3;
+    --need:#C2502F; --save-green:#2E9E5B; --divider:#E0E0E0;
+    --font:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--white);color:var(--black);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  body{max-width:480px;margin:0 auto;padding:34px 22px 60px;min-height:100vh;}
+  .mark{font-weight:900;font-size:24px;letter-spacing:-1px;text-transform:uppercase;}
+  .mark .dot{color:var(--teal);}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:22px 0 6px;}
+  .sub{color:var(--slate);font-size:14px;font-weight:500;line-height:1.5;margin-bottom:22px;}
+  .card{border:1px solid var(--divider);border-radius:16px;overflow:hidden;margin-bottom:22px;}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 16px;border-bottom:1px solid var(--divider);}
+  .row:last-child{border-bottom:none;}
+  .row .nm{font-weight:700;font-size:15px;flex:1 1 auto;min-width:120px;}
+  .row .nm .dt{display:block;font-weight:500;font-size:12px;color:var(--grey);margin-top:1px;}
+  .row .tags{display:flex;align-items:center;gap:8px;flex:0 0 auto;margin-left:auto;}
+  .chip{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--slate);
+    background:var(--card-light);border-radius:999px;padding:4px 10px;white-space:nowrap;}
+  .chip.store{color:var(--teal);background:var(--teal-tint);}
+  .row.dupe{opacity:.5;}
+  .row .done{font-size:11px;font-weight:800;color:var(--save-green);text-transform:uppercase;letter-spacing:.5px;}
+  button{font-family:var(--font);cursor:pointer;border:none;}
+  .btn{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:54px;
+    background:var(--teal);color:var(--white);border-radius:30px;font-weight:800;font-size:14px;
+    letter-spacing:.5px;text-transform:uppercase;padding:0 18px;box-shadow:0 6px 18px rgba(54,179,175,.34);}
+  .btn.dark{background:var(--black);box-shadow:none;}
+  .btn:disabled{opacity:.5;cursor:default;box-shadow:none;}
+  .btn svg{width:20px;height:20px;flex-shrink:0;}
+  .note{margin-top:16px;color:var(--grey);font-size:12.5px;font-weight:500;line-height:1.55;text-align:center;}
+  .msg{border-radius:12px;padding:13px 15px;font-size:13.5px;font-weight:600;line-height:1.5;margin-bottom:18px;}
+  .msg.ok{background:#E6F4EC;color:#1E6B3F;}
+  .msg.err{background:var(--need);background:#F6E9E4;color:#8A2F17;}
+  .hidden{display:none !important;}
+  .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+  <div class="mark">Kanban<span class="dot">.</span></div>
+  <h1>Add these items</h1>
+  <div class="sub">A one-time helper to drop the new items straight onto your shared list. Sign in with the same Google account you use in the app.</div>
+
+  <div id="msg" class="msg hidden"></div>
+
+  <div class="card" id="list"></div>
+
+  <button id="signinBtn" class="btn dark">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12v2.9h5.35c-.25 1.36-1.02 2.5-2.16 3.27v2.72h3.5c2.05-1.9 3.24-4.7 3.24-8.03 0-.66-.06-1.29-.18-1.86z"/><path d="M12 22c2.7 0 4.96-.9 6.62-2.43l-3.5-2.72c-.97.65-2.22 1.03-3.12 1.03-2.4 0-4.43-1.62-5.16-3.8H3.24v2.8C4.9 19.9 8.2 22 12 22z"/><path d="M6.84 14.08c-.2-.6-.31-1.24-.31-1.9s.11-1.3.3-1.9V7.5H3.24C2.55 8.86 2.16 10.38 2.16 12s.39 3.14 1.08 4.5l3.6-2.42z"/><path d="M12 6.32c1.47 0 2.78.5 3.82 1.5l2.85-2.85C16.96 3.44 14.7 2.5 12 2.5 8.2 2.5 4.9 4.6 3.24 7.5l3.6 2.68C7.57 7.94 9.6 6.32 12 6.32z"/></svg>
+    Sign in with Google
+  </button>
+
+  <button id="addBtn" class="btn hidden">
+    <span id="addLbl">Add all items</span>
+  </button>
+
+  <button id="signoutBtn" class="btn dark hidden" style="margin-top:12px;background:none;color:var(--grey);box-shadow:none;min-height:40px;font-size:12px;">Switch account</button>
+
+  <div class="note" id="note"></div>
+
+<script type="module">
+  const ALLOWED = ['carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
+
+  // The items to add (name + store + category). Kept in sync with what was requested.
+  const ITEMS = [
+    { name:"Dr Pepper Zero Sugar",  store:"grocery", routing:"anywhere", dept:"Beverages",  detail:"" },
+    { name:"Ginger ale",            store:"grocery", routing:"anywhere", dept:"Beverages",  detail:"" },
+    { name:"Peanut butter - Adams", store:"grocery", routing:"anywhere", dept:"Condiments", detail:"" },
+    { name:"Ketchup",               store:"grocery", routing:"anywhere", dept:"Condiments", detail:"" },
+    { name:"Lemon juice",           store:"grocery", routing:"anywhere", dept:"Condiments", detail:"" },
+    { name:"Coke",                  store:"grocery", routing:"anywhere", dept:"Beverages",  detail:"" },
+    { name:"Pistachios",            store:"costco",  routing:"anywhere", dept:"Snacks",     detail:"Costco" },
+  ];
+  const STORE_LABEL = { grocery:'Grocery', costco:'Costco', liquor:'Liquor', shoppers:'Shoppers' };
+
+  const $ = id => document.getElementById(id);
+  const msg = (txt, kind='ok') => { const m=$('msg'); m.textContent=txt; m.className='msg '+kind; };
+  const hideMsg = () => $('msg').classList.add('hidden');
+
+  // render the item list (dupes get flagged once we know what's already there)
+  let existingKeys = new Set();
+  function renderList(){
+    $('list').innerHTML = ITEMS.map(it=>{
+      const key = it.name+'|'+it.store;
+      const dupe = existingKeys.has(key);
+      const detail = it.detail ? `<span class="dt">${it.detail}</span>` : '';
+      return `<div class="row${dupe?' dupe':''}">
+        <div class="nm">${it.name}${detail}</div>
+        <span class="chip">${it.dept}</span>
+        <span class="chip store">${STORE_LABEL[it.store]||it.store}</span>
+        ${dupe?'<span class="done">On list</span>':''}
+      </div>`;
+    }).join('');
+  }
+  renderList();
+
+  let firebaseConfig=null;
+  try { ({ firebaseConfig } = await import('./firebase-config.js')); }
+  catch(e){ msg('Could not load the app config. Open this page from the same site as the app.', 'err'); }
+
+  if(firebaseConfig){
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const fs = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const a  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+
+    const app = initializeApp(firebaseConfig);
+    const db  = fs.getFirestore(app);
+    let auth;
+    try{
+      auth = a.initializeAuth(app, {
+        persistence: [a.indexedDBLocalPersistence, a.browserLocalPersistence],
+        popupRedirectResolver: a.browserPopupRedirectResolver
+      });
+    }catch(e){ auth = a.getAuth(app); }
+
+    const provider = new a.GoogleAuthProvider();
+    const col = fs.collection(db, 'items');
+
+    // catch the return trip from a redirect sign-in (mobile)
+    try{ await a.getRedirectResult(auth); }catch(e){ console.warn(e); }
+
+    $('signinBtn').onclick = async ()=>{
+      hideMsg();
+      try{ await a.signInWithPopup(auth, provider); }
+      catch(e){
+        // popups are often blocked on mobile Safari — fall back to full-page redirect
+        try{ await a.signInWithRedirect(auth, provider); }
+        catch(e2){ msg('Sign-in was blocked. Try again, or use the app to add them.', 'err'); }
+      }
+    };
+    $('signoutBtn').onclick = ()=> a.signOut(auth);
+
+    a.onAuthStateChanged(auth, async user=>{
+      if(!user){
+        $('signinBtn').classList.remove('hidden');
+        $('addBtn').classList.add('hidden');
+        $('signoutBtn').classList.add('hidden');
+        $('note').textContent='';
+        return;
+      }
+      if(!ALLOWED.includes((user.email||'').toLowerCase())){
+        msg(`Signed in as ${user.email}, but that account isn't on the household list. Use Chris's or Carmyn's account.`, 'err');
+        $('signinBtn').classList.add('hidden');
+        $('addBtn').classList.add('hidden');
+        $('signoutBtn').classList.remove('hidden');
+        return;
+      }
+      // allowed user — figure out which items already exist, then enable "Add all"
+      $('signinBtn').classList.add('hidden');
+      $('signoutBtn').classList.remove('hidden');
+      $('note').textContent = `Signed in as ${user.email}`;
+      try{
+        const snap = await fs.getDocs(col);
+        existingKeys = new Set(snap.docs.map(d=>{ const x=d.data(); return (x.name||'')+'|'+(x.store||''); }));
+      }catch(e){ console.warn('Could not read existing list', e); }
+      renderList();
+      const toAdd = ITEMS.filter(it=> !existingKeys.has(it.name+'|'+it.store));
+      const addBtn=$('addBtn'), addLbl=$('addLbl');
+      addBtn.classList.remove('hidden');
+      if(!toAdd.length){
+        msg('All of these are already on your list — nothing to add.', 'ok');
+        addBtn.disabled = true; addLbl.textContent = 'Nothing to add';
+        return;
+      }
+      addBtn.disabled=false;
+      addLbl.textContent = `Add ${toAdd.length} item${toAdd.length>1?'s':''} to my list`;
+      addBtn.onclick = async ()=>{
+        addBtn.disabled=true; hideMsg();
+        addBtn.innerHTML='<span class="spin"></span>';
+        let added=0;
+        try{
+          for(const it of toAdd){
+            await fs.addDoc(col, {
+              name:it.name, store:it.store, routing:it.routing, dept:it.dept,
+              detail:it.detail||'', note:'', qty:1, onList:false, checked:false
+            });
+            added++;
+          }
+          existingKeys = new Set([...existingKeys, ...toAdd.map(it=>it.name+'|'+it.store)]);
+          renderList();
+          msg(`Added ${added} item${added>1?'s':''} to your Needs list. Open the app to see them — tap the + on any item to move it to your Shopping list.`, 'ok');
+          addBtn.innerHTML='<span id="addLbl">Done ✓</span>';
+        }catch(e){
+          console.error(e);
+          msg(`Added ${added} of ${toAdd.length}. Something went wrong on the rest: ${e.code||e.message}. You can tap Add again to retry the remaining ones.`, 'err');
+          addBtn.disabled=false; addBtn.innerHTML='<span id="addLbl">Retry remaining</span>';
+        }
+      };
+    });
+  }
+</script>
+</body>
+</html>

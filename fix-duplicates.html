@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>Fix duplicates · Kanban</title>
+<!--
+  One-time helper: finds items that exist more than once (same product name,
+  case/spacing-insensitive) — the usual cause of a category appearing to
+  "duplicate" on the Needs/Shopping list (e.g. one Pistachios under Grocery
+  and another under Costco both show a "Snacks" header). Uses the same
+  Firebase project + Google sign-in as the app, so the household security
+  rules still apply (only Chris & Carmyn can write). Lets you pick which
+  copy to keep; the rest are deleted. Remove this file once you're done.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#1A1A1A; --white:#FFFFFF; --cream:#F6F1E9; --teal:#36B3AF;
+    --slate:#4A4A4A; --grey:#908F8A; --card-light:#F5F0E8; --teal-tint:#E4F4F3;
+    --need:#C2502F; --save-green:#2E9E5B; --divider:#E0E0E0;
+    --font:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--white);color:var(--black);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  body{max-width:480px;margin:0 auto;padding:34px 22px 60px;min-height:100vh;}
+  .mark{font-weight:900;font-size:24px;letter-spacing:-1px;text-transform:uppercase;}
+  .mark .dot{color:var(--teal);}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:22px 0 6px;}
+  .sub{color:var(--slate);font-size:14px;font-weight:500;line-height:1.5;margin-bottom:22px;}
+  button{font-family:var(--font);cursor:pointer;border:none;}
+  .btn{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:54px;
+    background:var(--teal);color:var(--white);border-radius:30px;font-weight:800;font-size:14px;
+    letter-spacing:.5px;text-transform:uppercase;padding:0 18px;box-shadow:0 6px 18px rgba(54,179,175,.34);}
+  .btn.dark{background:var(--black);box-shadow:none;}
+  .btn:disabled{opacity:.5;cursor:default;box-shadow:none;}
+  .btn svg{width:20px;height:20px;flex-shrink:0;}
+  .btn.ghost{margin-top:12px;background:none;color:var(--grey);box-shadow:none;min-height:40px;font-size:12px;}
+  .note{margin-top:16px;color:var(--grey);font-size:12.5px;font-weight:500;line-height:1.55;text-align:center;}
+  .msg{border-radius:12px;padding:13px 15px;font-size:13.5px;font-weight:600;line-height:1.5;margin-bottom:18px;}
+  .msg.ok{background:#E6F4EC;color:#1E6B3F;}
+  .msg.err{background:#F6E9E4;color:#8A2F17;}
+  .hidden{display:none !important;}
+  .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:sp .7s linear infinite;display:inline-block;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  .cluster{border:1px solid var(--divider);border-radius:16px;overflow:hidden;margin-bottom:18px;}
+  .cluster-h{background:var(--card-light);padding:12px 16px;font-weight:800;font-size:14.5px;}
+  .cluster-h .n{color:var(--grey);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-left:6px;}
+  .copy{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-top:1px solid var(--divider);cursor:pointer;}
+  .copy input{margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--teal);}
+  .copy .body{flex:1;min-width:0;}
+  .copy .store{font-weight:700;font-size:14.5px;}
+  .copy .meta{font-size:12px;color:var(--grey);font-weight:500;margin-top:2px;line-height:1.4;}
+  .copy .meta b{color:var(--slate);font-weight:700;}
+  .cluster-actions{padding:14px 16px;border-top:1px solid var(--divider);background:#FCFBF9;}
+  .cluster .resolved{padding:14px 16px;color:var(--save-green);font-weight:700;font-size:13.5px;}
+</style>
+</head>
+<body>
+  <div class="mark">Kanban<span class="dot">.</span></div>
+  <h1>Fix duplicate items</h1>
+  <div class="sub">Finds products that got added more than once (the usual reason a category like "Snacks" seems to show up twice). Pick which copy to keep — the others get deleted.</div>
+
+  <div id="msg" class="msg hidden"></div>
+  <div id="scanning" class="sub hidden">Checking your list…</div>
+  <div id="clusters"></div>
+
+  <button id="signinBtn" class="btn dark">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12v2.9h5.35c-.25 1.36-1.02 2.5-2.16 3.27v2.72h3.5c2.05-1.9 3.24-4.7 3.24-8.03 0-.66-.06-1.29-.18-1.86z"/><path d="M12 22c2.7 0 4.96-.9 6.62-2.43l-3.5-2.72c-.97.65-2.22 1.03-3.12 1.03-2.4 0-4.43-1.62-5.16-3.8H3.24v2.8C4.9 19.9 8.2 22 12 22z"/><path d="M6.84 14.08c-.2-.6-.31-1.24-.31-1.9s.11-1.3.3-1.9V7.5H3.24C2.55 8.86 2.16 10.38 2.16 12s.39 3.14 1.08 4.5l3.6-2.42z"/><path d="M12 6.32c1.47 0 2.78.5 3.82 1.5l2.85-2.85C16.96 3.44 14.7 2.5 12 2.5 8.2 2.5 4.9 4.6 3.24 7.5l3.6 2.68C7.57 7.94 9.6 6.32 12 6.32z"/></svg>
+    Sign in with Google
+  </button>
+
+  <button id="signoutBtn" class="btn ghost hidden">Switch account</button>
+
+  <div class="note" id="note"></div>
+
+<script type="module">
+  const ALLOWED = ['carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
+  const STORE_LABEL = { grocery:'Grocery', costco:'Costco', liquor:'Liquor', shoppers:'Shoppers' };
+
+  const $ = id => document.getElementById(id);
+  const msg = (txt, kind='ok') => { const m=$('msg'); m.textContent=txt; m.className='msg '+kind; };
+  const hideMsg = () => $('msg').classList.add('hidden');
+  const norm = s => (s||'').trim().toLowerCase().replace(/\s+/g,' ');
+
+  let firebaseConfig=null;
+  try { ({ firebaseConfig } = await import('./firebase-config.js')); }
+  catch(e){ msg('Could not load the app config. Open this page from the same site as the app.', 'err'); }
+
+  if(firebaseConfig){
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const fs = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const a  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+
+    const app = initializeApp(firebaseConfig);
+    const db  = fs.getFirestore(app);
+    let auth;
+    try{
+      auth = a.initializeAuth(app, {
+        persistence: [a.indexedDBLocalPersistence, a.browserLocalPersistence],
+        popupRedirectResolver: a.browserPopupRedirectResolver
+      });
+    }catch(e){ auth = a.getAuth(app); }
+
+    const provider = new a.GoogleAuthProvider();
+    const col = fs.collection(db, 'items');
+
+    try{ await a.getRedirectResult(auth); }catch(e){ console.warn(e); }
+
+    $('signinBtn').onclick = async ()=>{
+      hideMsg();
+      try{ await a.signInWithPopup(auth, provider); }
+      catch(e){
+        try{ await a.signInWithRedirect(auth, provider); }
+        catch(e2){ msg('Sign-in was blocked. Please try again.', 'err'); }
+      }
+    };
+    $('signoutBtn').onclick = ()=> a.signOut(auth);
+
+    function copyLine(it){
+      const bits=[];
+      if(it.dept) bits.push(it.dept);
+      if(it.detail) bits.push(it.detail);
+      bits.push(it.onList ? 'on shopping list' : 'in needs list');
+      if(it.onList && it.qty>1) bits.push(`qty ${it.qty}`);
+      return bits.join(' · ');
+    }
+
+    function renderClusters(clusters){
+      if(!clusters.length){
+        $('clusters').innerHTML='';
+        msg("No duplicates found — your list looks clean. Nothing to fix!", 'ok');
+        return;
+      }
+      hideMsg();
+      $('clusters').innerHTML = clusters.map((cluster, ci)=>{
+        const rows = cluster.map((it, ii)=>`
+          <label class="copy">
+            <input type="radio" name="cl${ci}" value="${ii}" ${ii===0?'checked':''}>
+            <div class="body">
+              <div class="store">${STORE_LABEL[it.store]||it.store}</div>
+              <div class="meta">${copyLine(it)}</div>
+            </div>
+          </label>`).join('');
+        return `<div class="cluster" data-ci="${ci}">
+          <div class="cluster-h">${cluster[0].name}<span class="n">${cluster.length} copies</span></div>
+          ${rows}
+          <div class="cluster-actions">
+            <button class="btn" data-keep-btn="${ci}">Keep the selected copy, delete the rest</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      clusters.forEach((cluster, ci)=>{
+        const btn = document.querySelector(`[data-keep-btn="${ci}"]`);
+        btn.onclick = async ()=>{
+          const sel = document.querySelector(`input[name="cl${ci}"]:checked`);
+          const keepIdx = sel ? Number(sel.value) : 0;
+          const toDelete = cluster.filter((_,i)=>i!==keepIdx);
+          btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+          try{
+            for(const it of toDelete){ await fs.deleteDoc(fs.doc(db,'items',it.id)); }
+            const clusterEl = document.querySelector(`.cluster[data-ci="${ci}"]`);
+            clusterEl.innerHTML = `<div class="resolved">✓ Kept ${STORE_LABEL[cluster[keepIdx].store]||cluster[keepIdx].store} — removed ${toDelete.length} duplicate${toDelete.length>1?'s':''}.</div>`;
+          }catch(e){
+            console.error(e);
+            btn.disabled=false; btn.textContent='Something went wrong — tap to retry';
+          }
+        };
+      });
+    }
+
+    a.onAuthStateChanged(auth, async user=>{
+      if(!user){
+        $('signinBtn').classList.remove('hidden');
+        $('signoutBtn').classList.add('hidden');
+        $('scanning').classList.add('hidden');
+        $('clusters').innerHTML=''; hideMsg();
+        $('note').textContent='';
+        return;
+      }
+      if(!ALLOWED.includes((user.email||'').toLowerCase())){
+        msg(`Signed in as ${user.email}, but that account isn't on the household list. Use Chris's or Carmyn's account.`, 'err');
+        $('signinBtn').classList.add('hidden');
+        $('signoutBtn').classList.remove('hidden');
+        return;
+      }
+      $('signinBtn').classList.add('hidden');
+      $('signoutBtn').classList.remove('hidden');
+      $('note').textContent = `Signed in as ${user.email}`;
+      $('scanning').classList.remove('hidden');
+      try{
+        const snap = await fs.getDocs(col);
+        const all = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+        const groups = {};
+        all.forEach(it=>{ const k=norm(it.name); (groups[k]=groups[k]||[]).push(it); });
+        const clusters = Object.values(groups).filter(g=>g.length>1)
+          .sort((a,b)=>a[0].name.localeCompare(b[0].name));
+        $('scanning').classList.add('hidden');
+        renderClusters(clusters);
+      }catch(e){
+        console.error(e);
+        $('scanning').classList.add('hidden');
+        msg('Could not read your list. Try reloading this page.', 'err');
+      }
+    });
+  }
+</script>
+</body>
+</html>

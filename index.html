@@ -494,6 +494,12 @@
 </div>
 
 <script>
+// iOS/PWA sometimes restores the previous scroll position when the app is
+// reopened from the background (bfcache) instead of starting at the top —
+// this stops the browser from doing that and forces the top on every show.
+if('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.addEventListener('pageshow', ()=> window.scrollTo(0,0));
+
 const ICON = {
   grocery:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.5 13h11l2-9H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>',
   costco:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M3 9v6l9 5 9-5V9"/><path d="M12 14v6"/></svg>',
@@ -1022,7 +1028,7 @@ function renderChips(){
   html+=STORE_ORDER.map(s=>`<div class="chip ${filter===s?'sel':''}" data-s="${s}" onclick="setFilter('${s}')"><span class="cdot"></span>${STORES[s].name}</div>`).join('');
   c.innerHTML=html;
 }
-function setFilter(f){ filter=f; refresh(); }
+function setFilter(f){ filter=f; refresh(); window.scrollTo(0,0); }
 
 // ---- category quick-filter (custom dropdown, so "All categories" can stay pinned) ----
 function ensureCatFilter(){
@@ -1044,7 +1050,7 @@ function toggleCatMenu(e){ if(e) e.stopPropagation(); catMenuOpen ? closeCatMenu
 function openCatMenu(){ buildCatMenu(); document.getElementById('catMenu').classList.add('open'); document.getElementById('catMenuScrim').classList.add('open'); catMenuOpen=true; }
 function closeCatMenu(){ document.getElementById('catMenu').classList.remove('open'); document.getElementById('catMenuScrim').classList.remove('open'); catMenuOpen=false; }
 function chooseCat(v){ closeCatMenu(); setCatFilter(v); }
-function setCatFilter(v){ catFilter=v; syncCatLabel(); refresh(); }
+function setCatFilter(v){ catFilter=v; syncCatLabel(); refresh(); window.scrollTo(0,0); }
 // does an item pass the active category filter? "Liquor" matches all liquor subcategories.
 function catMatch(i){
   if(catFilter==='all') return true;

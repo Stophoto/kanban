@@ -17,16 +17,26 @@ service cloud.firestore {
         && request.auth.token.email in ['carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
     }
 
-    // Ben's own list (ben/index.html) — a separate collection only his account can touch.
+    // Ben & Kat's shared list (ben/index.html) — both their Google accounts can
+    // read and write it, same pattern as the parents' shared list above. Chris and
+    // Carmyn can also view it (family-overview.html) but never write to it.
     match /items_ben/{itemId} {
       allow read, write: if request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email == 'benprefontaine@gmail.com';
+        && request.auth.token.email in ['benprefontaine@gmail.com', 'katevers137@gmail.com'];
+      allow read: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
     }
 
-    // Luke's own list (luke/index.html) — a separate collection only his account can touch.
+    // Luke's own list (luke/index.html) — only Luke can add/edit/delete his own items.
+    // Chris and Carmyn can view it (family-overview.html) but never write to it —
+    // it stays his list to manage.
     match /items_luke/{itemId} {
-      allow read, write: if request.auth != null
+      allow read: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['lukeprefontaine@gmail.com', 'carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
+      allow write: if request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email == 'lukeprefontaine@gmail.com';
     }

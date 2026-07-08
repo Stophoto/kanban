@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>Family overview · Kanban</title>
+<!--
+  Read-only parent view. Shows what's actually in the shared list, Ben's list,
+  and Luke's list side by side, so you can confirm the boys' lists only have
+  generic starter items — nothing personal carried over. Never writes or
+  deletes anything; it's strictly a viewer. Uses the same Firebase project +
+  Google sign-in as the app, gated to Chris and Carmyn's accounts (see
+  firestore.rules — items_ben/items_luke grant parents read-only access).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#1A1A1A; --white:#FFFFFF; --cream:#F6F1E9; --teal:#36B3AF;
+    --slate:#4A4A4A; --grey:#908F8A; --card-light:#F5F0E8; --teal-tint:#E4F4F3;
+    --need:#C2502F; --save-green:#2E9E5B; --divider:#E0E0E0;
+    --font:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--white);color:var(--black);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  body{max-width:560px;margin:0 auto;padding:34px 22px 60px;min-height:100vh;}
+  .mark{font-weight:900;font-size:24px;letter-spacing:-1px;text-transform:uppercase;}
+  .mark .dot{color:var(--teal);}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:22px 0 6px;}
+  .sub{color:var(--slate);font-size:14px;font-weight:500;line-height:1.5;margin-bottom:22px;}
+  button{font-family:var(--font);cursor:pointer;border:none;}
+  .btn{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;min-height:54px;
+    background:var(--teal);color:var(--white);border-radius:30px;font-weight:800;font-size:14px;
+    letter-spacing:.5px;text-transform:uppercase;padding:0 18px;box-shadow:0 6px 18px rgba(54,179,175,.34);}
+  .btn.dark{background:var(--black);box-shadow:none;}
+  .btn.ghost{margin-top:12px;background:none;color:var(--grey);box-shadow:none;min-height:40px;font-size:12px;}
+  .btn svg{width:20px;height:20px;flex-shrink:0;}
+  .note{margin-top:16px;color:var(--grey);font-size:12.5px;font-weight:500;line-height:1.55;text-align:center;}
+  .msg{border-radius:12px;padding:13px 15px;font-size:13.5px;font-weight:600;line-height:1.5;margin-bottom:18px;}
+  .msg.ok{background:#E6F4EC;color:#1E6B3F;}
+  .msg.err{background:#F6E9E4;color:#8A2F17;}
+  .hidden{display:none !important;}
+
+  .section{margin-bottom:26px;}
+  .section-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    border-bottom:2.5px solid var(--black);padding-bottom:8px;margin-bottom:4px;}
+  .section-h h2{font-size:18px;font-weight:800;letter-spacing:-.3px;}
+  .section-h .cnt{font-size:11px;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;}
+  .cat{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--teal);
+    margin:14px 0 2px;}
+  .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--divider);}
+  .row .nm{font-weight:600;font-size:14.5px;flex:1;min-width:0;}
+  .row .nm .dt{display:block;font-weight:500;font-size:11.5px;color:var(--grey);margin-top:1px;}
+  .chip{font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--slate);
+    background:var(--card-light);border-radius:999px;padding:3px 9px;white-space:nowrap;flex:none;}
+  .chip.on{color:var(--teal);background:var(--teal-tint);}
+  .empty-note{color:var(--grey);font-size:13px;font-weight:500;padding:10px 2px;}
+</style>
+</head>
+<body>
+  <div class="mark">Kanban<span class="dot">.</span></div>
+  <h1>Family overview</h1>
+  <div class="sub">A read-only look at all three lists — the shared list, Ben's, and Luke's — so you can confirm each one has exactly what it should. This page never edits or deletes anything.</div>
+
+  <div id="msg" class="msg hidden"></div>
+  <div id="loading" class="sub hidden">Loading…</div>
+  <div id="sections"></div>
+
+  <button id="signinBtn" class="btn dark">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12v2.9h5.35c-.25 1.36-1.02 2.5-2.16 3.27v2.72h3.5c2.05-1.9 3.24-4.7 3.24-8.03 0-.66-.06-1.29-.18-1.86z"/><path d="M12 22c2.7 0 4.96-.9 6.62-2.43l-3.5-2.72c-.97.65-2.22 1.03-3.12 1.03-2.4 0-4.43-1.62-5.16-3.8H3.24v2.8C4.9 19.9 8.2 22 12 22z"/><path d="M6.84 14.08c-.2-.6-.31-1.24-.31-1.9s.11-1.3.3-1.9V7.5H3.24C2.55 8.86 2.16 10.38 2.16 12s.39 3.14 1.08 4.5l3.6-2.42z"/><path d="M12 6.32c1.47 0 2.78.5 3.82 1.5l2.85-2.85C16.96 3.44 14.7 2.5 12 2.5 8.2 2.5 4.9 4.6 3.24 7.5l3.6 2.68C7.57 7.94 9.6 6.32 12 6.32z"/></svg>
+    Sign in with Google
+  </button>
+
+  <button id="signoutBtn" class="btn ghost hidden">Switch account</button>
+
+  <div class="note" id="note"></div>
+
+<script type="module">
+  const ALLOWED = ['carmyn.pre@gmail.com', 'prefontainech@gmail.com'];
+  const STORE_LABEL = { grocery:'Grocery', costco:'Costco', liquor:'Liquor', shoppers:'Shoppers' };
+  const LISTS = [
+    { collection:'items',      title:'Shared list (you & Carmyn)' },
+    { collection:'items_ben',  title:"Ben's list" },
+    { collection:'items_luke', title:"Luke's list" },
+  ];
+
+  const $ = id => document.getElementById(id);
+  const esc = s => (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const msg = (txt, kind='ok') => { const m=$('msg'); m.textContent=txt; m.className='msg '+kind; };
+  const hideMsg = () => $('msg').classList.add('hidden');
+
+  let firebaseConfig=null;
+  try { ({ firebaseConfig } = await import('./firebase-config.js')); }
+  catch(e){ msg('Could not load the app config. Open this page from the same site as the app.', 'err'); }
+
+  if(firebaseConfig){
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const fs = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const a  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+
+    const app = initializeApp(firebaseConfig);
+    const db  = fs.getFirestore(app);
+    let auth;
+    try{
+      auth = a.initializeAuth(app, {
+        persistence: [a.indexedDBLocalPersistence, a.browserLocalPersistence],
+        popupRedirectResolver: a.browserPopupRedirectResolver
+      });
+    }catch(e){ auth = a.getAuth(app); }
+
+    const provider = new a.GoogleAuthProvider();
+    try{ await a.getRedirectResult(auth); }catch(e){ console.warn(e); }
+
+    $('signinBtn').onclick = async ()=>{
+      hideMsg();
+      try{ await a.signInWithPopup(auth, provider); }
+      catch(e){
+        try{ await a.signInWithRedirect(auth, provider); }
+        catch(e2){ msg('Sign-in was blocked. Please try again.', 'err'); }
+      }
+    };
+    $('signoutBtn').onclick = ()=> a.signOut(auth);
+
+    function renderSection(list, items){
+      const n = items.length;
+      let body;
+      if(!n){
+        body = `<div class="empty-note">Nothing here yet.</div>`;
+      } else {
+        const byCat = {};
+        items.forEach(i=>{ (byCat[i.dept||'General']=byCat[i.dept||'General']||[]).push(i); });
+        const cats = Object.keys(byCat).sort();
+        body = cats.map(cat=>{
+          const rows = byCat[cat].sort((a,b)=>a.name.localeCompare(b.name)).map(i=>{
+            const detail = i.detail ? `<span class="dt">${esc(i.detail)}</span>` : '';
+            const store = STORE_LABEL[i.store] || i.store;
+            return `<div class="row">
+              <div class="nm">${esc(i.name)}${detail}</div>
+              <span class="chip">${esc(store)}</span>
+              ${i.onList ? '<span class="chip on">on list</span>' : ''}
+            </div>`;
+          }).join('');
+          return `<div class="cat">${esc(cat)}</div>${rows}`;
+        }).join('');
+      }
+      return `<div class="section">
+        <div class="section-h"><h2>${list.title}</h2><span class="cnt">${n} item${n===1?'':'s'}</span></div>
+        ${body}
+      </div>`;
+    }
+
+    a.onAuthStateChanged(auth, async user=>{
+      if(!user){
+        $('signinBtn').classList.remove('hidden');
+        $('signoutBtn').classList.add('hidden');
+        $('loading').classList.add('hidden');
+        $('sections').innerHTML=''; hideMsg();
+        $('note').textContent='';
+        return;
+      }
+      if(!ALLOWED.includes((user.email||'').toLowerCase())){
+        msg(`Signed in as ${user.email}, but that account isn't on the parent list.`, 'err');
+        $('signinBtn').classList.add('hidden');
+        $('signoutBtn').classList.remove('hidden');
+        return;
+      }
+      $('signinBtn').classList.add('hidden');
+      $('signoutBtn').classList.remove('hidden');
+      $('note').textContent = `Signed in as ${user.email}`;
+      $('loading').classList.remove('hidden');
+      hideMsg();
+      try{
+        const results = await Promise.all(LISTS.map(async list=>{
+          const snap = await fs.getDocs(fs.collection(db, list.collection));
+          return { list, items: snap.docs.map(d=>d.data()) };
+        }));
+        $('loading').classList.add('hidden');
+        $('sections').innerHTML = results.map(r=>renderSection(r.list, r.items)).join('');
+      }catch(e){
+        console.error(e);
+        $('loading').classList.add('hidden');
+        msg('Could not load one or more lists. Make sure the updated firestore.rules have been published.', 'err');
+      }
+    });
+  }
+</script>
+</body>
+</html>

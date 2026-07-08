@@ -6,25 +6,25 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FFFFFF">
-<meta name="apple-mobile-web-app-title" content="Kanban">
-<meta name="description" content="Household replenishment list for Chris & Carmyn">
+<meta name="apple-mobile-web-app-title" content="Ben's List">
+<meta name="description" content="Ben's personal replenishment list">
 <!-- Link preview (iMessage, social shares) — without these, shared links show no logo. -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="Kanban">
-<meta property="og:description" content="A private shared grocery & replenishment list for Chris & Carmyn.">
-<meta property="og:image" content="https://stophoto.github.io/kanban/icons/icon-512.png">
-<meta property="og:url" content="https://stophoto.github.io/kanban/">
+<meta property="og:title" content="Ben's List">
+<meta property="og:description" content="Ben's private grocery & replenishment list.">
+<meta property="og:image" content="https://stophoto.github.io/kanban/ben/icons/icon-512.png">
+<meta property="og:url" content="https://stophoto.github.io/kanban/ben/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Kanban">
-<meta name="twitter:description" content="A private shared grocery & replenishment list for Chris & Carmyn.">
-<meta name="twitter:image" content="https://stophoto.github.io/kanban/icons/icon-512.png">
+<meta name="twitter:title" content="Ben's List">
+<meta name="twitter:description" content="Ben's private grocery & replenishment list.">
+<meta name="twitter:image" content="https://stophoto.github.io/kanban/ben/icons/icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<title>Kanban</title>
+<title>Ben's List</title>
 <style>
   :root{
     /* Fratello palette */
@@ -375,7 +375,7 @@
 <div class="app">
   <header>
     <div class="h-row">
-      <div class="wordmark">Kanban<span class="dot">.</span></div>
+      <div class="wordmark">Ben<span class="dot">.</span></div>
       <div class="sync" onclick="syncTap()" title="Tap to sign out"><span class="led"></span>SYNCED</div>
     </div>
     <div class="toggle" id="toggle">
@@ -486,8 +486,8 @@
      an allowed account is signed in. The real lock is in firestore.rules. -->
 <div class="authgate" id="authgate" hidden>
   <div class="ag-card">
-    <div class="ag-mark">Kanban<span class="dot">.</span></div>
-    <div class="ag-sub" id="agSub">A private list for Chris &amp; Carmyn. Sign in to continue.</div>
+    <div class="ag-mark">Ben<span class="dot">.</span></div>
+    <div class="ag-sub" id="agSub">A private list for Ben. Sign in to continue.</div>
     <button class="ag-btn" id="authBtn" onclick="signInGoogle()">Continue with Google</button>
     <div class="ag-note" id="agNote"></div>
   </div>
@@ -523,7 +523,7 @@ const ICON = {
 // The Firestore collection this deployed copy reads/writes. Kept as one constant so a
 // per-person copy of this file (e.g. a family member's own version) can point at its
 // own collection in the same Firebase project just by changing this one line.
-const ITEMS_COLLECTION = 'items';
+const ITEMS_COLLECTION = 'items_ben';
 const STORES = {
   grocery:{name:'Grocery',icon:ICON.grocery}, costco:{name:'Costco',icon:ICON.costco},
   liquor:{name:'Liquor',icon:ICON.liquor}, shoppers:{name:'Shoppers',icon:ICON.shoppers},
@@ -551,188 +551,10 @@ const DEPT_MAP = {
 // One-time rename: existing items were stored "Brand first"; we now show the
 // descriptive name first and the brand last. Applied on load (normalizeItem) so
 // live records get the new name without a bulk database rewrite. Keyed on OLD name.
-const RENAME_MAP = {
-  "Built bars":"Protein bars - Built",
-  "KFI Butter Chicken Sauce":"Butter chicken sauce - KFI",
-  "Earls dry ribs":"Dry ribs - Earls",
-  "Whisps cheese chips":"Cheese chips - Whisps",
-  "Align probiotic":"Probiotic - Align",
-  "Sensodyne toothpaste":"Toothpaste - Sensodyne",
-  "Nizoral shampoo":"Shampoo - Nizoral",
-  "Native body wash":"Body wash - Native",
-  "TRESemmé hairspray":"Hairspray - TRESemmé",
-  "Dove Men deodorant":"Men deodorant - Dove",
-  "Summer's Eve feminine wash":"Feminine wash - Summer's Eve",
-  "La Roche-Posay Chapstick":"Chapstick - La Roche-Posay",
-  "La Roche-Posay cream":"Cream - La Roche-Posay",
-  "Burt's Bees Chapstick":"Chapstick - Burt's Bees",
-  "Marcelle eye makeup remover pads":"Eye makeup remover pads - Marcelle",
-  "Clinique Moisture Surge SPF 28":"Moisture Surge SPF 28 - Clinique",
-  "Clinique Moisture Surge 100H":"Moisture Surge 100H - Clinique",
-  "Clinique night cream":"Night cream - Clinique",
-  "Mario Badescu drying lotion":"Drying lotion - Mario Badescu",
-  "Tide powder":"Laundry powder - Tide",
-  "Tide pods":"Laundry pods - Tide",
-};
-// One-time per-item move into the new Spices & dry ingredients / Canned goods sections.
-// Guarded on the item's CURRENT dept so it fires once and never overrides a later manual
-// re-file (same idea as DEPT_MAP, but targeted at single items). Keyed on item name.
-const ITEM_RECAT = {
-  "Peppercorns":      {from:"Condiments", to:"Spices & dry ingredients"},
-  "Beef bouillon":    {from:"Condiments", to:"Spices & dry ingredients"},
-  "Chicken bouillon": {from:"Condiments", to:"Spices & dry ingredients"},
-  "Tuna":             {from:"Meat",       to:"Canned goods"},
-  "Green olives":     {from:"Condiments", to:"Canned goods"},
-};
+const RENAME_MAP = {};
+const ITEM_RECAT = {};
 
-const SEED = [
-  // ========== GROCERY (Superstore / Walmart / Co-op) ==========
-  {name:"Cauliflower rice", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
-  {name:"Eggs", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Milk", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Cream", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Cheese sticks", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Yogurt", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Cottage cheese", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Chris' cheese", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
-  {name:"Distilled water", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Frozen berries / raspberries", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
-  {name:"Bananas", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
-  {name:"Sparkling water", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Kombucha / nonalc cider", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Halloween candy", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Popcorn", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Pig puffs", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Ground beef", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
-  {name:"Chicken thigh", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
-  {name:"Pot roast", store:"grocery", routing:"anywhere", dept:"Meat", detail:"boneless bottom blade"},
-  {name:"Protein drinks", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Protein bars", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Pistachios", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Cashews", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Protein bars - Built", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Chicago mix", store:"grocery", routing:"anywhere", dept:"Snacks", detail:""},
-  {name:"Protein pancakes", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
-  {name:"Chimichangas", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
-  {name:"Lightly breaded chicken breast chunks", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
-  {name:"Avocado oil", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Olive oil", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Butter chicken sauce - KFI", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Peppercorns", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
-  {name:"Green olives", store:"grocery", routing:"anywhere", dept:"Canned goods", detail:""},
-  {name:"Sauerkraut", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
-  {name:"Beef bouillon", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
-  {name:"Chicken bouillon", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
-  {name:"Pasta", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
-  {name:"Bacon bits", store:"grocery", routing:"anywhere", dept:"Spices & dry ingredients", detail:""},
-  {name:"Maple syrup", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
-  {name:"Instant oatmeal", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
-  {name:"Cinnamon Toast Crunch", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
-  {name:"Honey", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
-  {name:"Orange juice", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Ole Cocktails", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Almond milk", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Tonic", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"Perrier", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
-  {name:"All-Purpose flour", store:"grocery", routing:"anywhere", dept:"Baking", detail:""},
-  {name:"Outdoor plants", store:"grocery", routing:"anywhere", dept:"General", detail:""},
-
-  // ---- Safeway-only (locked) ----
-  {name:"Dry ribs - Earls", store:"grocery", routing:"locked", dept:"Frozen", detail:"Safeway only"},
-  {name:"Fig jam", store:"grocery", routing:"locked", dept:"Condiments", detail:"Safeway only"},
-  {name:"Choc mug cake", store:"grocery", routing:"locked", dept:"Snacks", detail:"Safeway only"},
-  {name:"Cheese chips - Whisps", store:"grocery", routing:"locked", dept:"Snacks", detail:"Safeway only"},
-  {name:"Nonalcoholic cider", store:"grocery", routing:"locked", dept:"Beverages", detail:"Safeway only"},
-  // ---- Superstore-only (locked) ----
-  {name:"Sour cream", store:"grocery", routing:"locked", dept:"Dairy", detail:"Superstore only"},
-
-  // ========== COSTCO (bulk — 'best here', might grab elsewhere) ==========
-  {name:"Whipped cream", store:"costco", routing:"wait", dept:"Dairy", detail:""},
-  {name:"Shredded mozzarella", store:"costco", routing:"wait", dept:"Dairy", detail:""},
-  {name:"Egg bites", store:"costco", routing:"wait", dept:"Dairy", detail:""},
-  {name:"Cream cheese", store:"costco", routing:"wait", dept:"Dairy", detail:""},
-  {name:"Parmesan", store:"costco", routing:"wait", dept:"Dairy", detail:"shredded"},
-  {name:"Shredded cheddar", store:"costco", routing:"wait", dept:"Dairy", detail:""},
-  {name:"White cheese", store:"costco", routing:"wait", dept:"Dairy", detail:""},
-  {name:"Salmon or steak bites", store:"costco", routing:"wait", dept:"Meat", detail:""},
-  {name:"Tuna", store:"costco", routing:"wait", dept:"Canned goods", detail:""},
-
-  // ========== LIQUOR (Alberta — must be liquor store, locked) ==========
-  {name:"Bourbon", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Gin", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Jameson", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Rum", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Vodka", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Tequila", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Cointreau", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Rye", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Scotch", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Jägermeister", store:"liquor", routing:"locked", dept:"Spirits", detail:""},
-  {name:"Red wine", store:"liquor", routing:"locked", dept:"Wine", detail:"Spain or France"},
-  {name:"Red wine box", store:"liquor", routing:"locked", dept:"Wine", detail:"La Vieille Ferme"},
-  {name:"Bubbly", store:"liquor", routing:"locked", dept:"Wine", detail:"Giusti — orange bottle"},
-  {name:"Lillet", store:"liquor", routing:"locked", dept:"Wine", detail:""},
-  {name:"Red vermouth", store:"liquor", routing:"locked", dept:"Wine", detail:""},
-  {name:"Small red vermouth", store:"liquor", routing:"locked", dept:"Wine", detail:"for trailer"},
-  {name:"Martini minis", store:"liquor", routing:"locked", dept:"Wine", detail:"single serve"},
-  {name:"Beer", store:"liquor", routing:"locked", dept:"Beer & Cider", detail:""},
-  {name:"Apple cider", store:"liquor", routing:"locked", dept:"Beer & Cider", detail:""},
-
-  // ========== SHOPPERS (drugstore — mostly 'anywhere', cosmetics lean Shoppers) ==========
-  // Chris's drugstore staples — grab anywhere
-  {name:"Metamucil", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Advil", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Advil Cold & Sinus", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Aleve", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Allergy meds", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Claritin", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"for Ben and us"},
-  {name:"Pepto", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Red Polysporin", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Neti pot packets", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Nose tea", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Probiotic - Align", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Digestive Support, 42 caps (~$40)"},
-  {name:"Eyedrops", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"x2 — see saved photo"},
-  {name:"Q-tips", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Toothpaste - Sensodyne", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Shampoo - Nizoral", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Rogaine", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Body wash", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Body wash - Native", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Citrus"},
-  {name:"Hairspray - TRESemmé", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Tres Extra Hold, lvl 4, large can (~$7)"},
-  {name:"Men deodorant - Dove", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"+care Ultimate Clinical, Clean Comfort (~$12.50)"},
-  {name:"Clinical deodorant for Carm", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"x2 — unscented or powder"},
-  {name:"Flushable wipes", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"Life sensitive skin, individually wrapped"},
-  {name:"Feminine wash - Summer's Eve", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:""},
-  {name:"Extra slim tampons", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"plastic applicators"},
-  {name:"Nail clippers", store:"shoppers", routing:"anywhere", dept:"Toiletries", detail:"small, for Carm"},
-
-  // Cosmetics / specialty — lean Shoppers (locked-ish, but keep anywhere since Carm's mom buys)
-  {name:"Chapstick - La Roche-Posay", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x4 — Nutritic lips"},
-  {name:"Cream - La Roche-Posay", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:""},
-  {name:"Chapstick - Burt's Bees", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x6 — ultra conditioning (~$11.50 ea)"},
-  {name:"Eye makeup remover pads - Marcelle", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"oil-free (~$15)"},
-  {name:"Moisture Surge SPF 28 - Clinique", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"sheer hydrator (~$84)"},
-  {name:"Moisture Surge 100H - Clinique", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x2 — auto-replenishing (~$82)"},
-  {name:"Night cream - Clinique", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:""},
-  {name:"Drying lotion - Mario Badescu", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"pink zit stuff"},
-  {name:"Waterproof mascara", store:"shoppers", routing:"anywhere", dept:"Cosmetics", detail:"x2"},
-
-  // ========== HOUSEHOLD (now shelved under Grocery; category kept) ==========
-  {name:"Laundry powder - Tide", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Laundry pods - Tide", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Dish soap", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Dishwasher pods", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Jet Dry", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Toilet paper", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
-  {name:"Paper towel", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
-  {name:"Kleenex", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
-  {name:"Ziplocks", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Organic bags", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Clear bags", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Parchment", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"Foil", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
-  {name:"AA batteries", store:"grocery", routing:"anywhere", dept:"General", detail:""},
-];
+const SEED = [];
 
 // `items` is the in-memory working copy every render function reads from.
 // Firebase mode keeps it in sync via onSnapshot; local mode loads it from localStorage.
@@ -878,7 +700,7 @@ function stopFirebaseSync(){ if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubS
 /* ---- access control: only these Google accounts can open the shared list ----
    This is the friendly in-app gate; the REAL enforcement lives in firestore.rules,
    which lists the same emails. To add/remove a person, change BOTH places. */
-const ALLOWED = ['carmyn.pre@gmail.com','prefontainech@gmail.com'];
+const ALLOWED = ['benprefontaine@gmail.com'];
 
 async function firebaseBoot(){
   const { auth, authFns } = window.PantryFB;
@@ -921,10 +743,10 @@ function showAuthGate(state, email){
   btn.style.visibility='visible'; btn.disabled=false;
   if(state==='denied'){
     sub.textContent='That account isn’t on the list.';
-    note.innerHTML=(email?'<strong>'+esc(email)+'</strong> can’t open this list. ':'')+'Only Chris and Carmyn’s Google accounts have access.';
+    note.innerHTML=(email?'<strong>'+esc(email)+'</strong> can’t open this list. ':'')+'Only Ben’s Google account has access.';
     btn.innerHTML=googleBtnLabel('Try a different account');
   } else {
-    sub.textContent='A private list for Chris & Carmyn. Sign in to continue.';
+    sub.textContent='A private list for Ben. Sign in to continue.';
     note.textContent='';
     btn.innerHTML=googleBtnLabel('Continue with Google');
   }
@@ -962,7 +784,7 @@ async function signOutKanban(){
 function syncTap(){
   if(backend!=='firebase') return;
   const fb=window.PantryFB||{};
-  if(fb.auth&&fb.auth.currentUser && confirm('Sign out of Kanban on this device?')) signOutKanban();
+  if(fb.auth&&fb.auth.currentUser && confirm('Sign out on this device?')) signOutKanban();
 }
 
 /* ---- entry point, called by the Firebase module below once it has decided ---- */
@@ -1555,7 +1377,7 @@ setMode(mode);
       catch(e){ console.warn('Offline cache unavailable; using in-memory cache.', e); db = fs.getFirestore(app); }
       // Stay signed in indefinitely: IndexedDB persistence survives browser/app
       // restarts and resists Safari's storage eviction far better than localStorage,
-      // so Chris & Carmyn don't get logged out. The popup/redirect resolver MUST be
+      // so the signed-in family member doesn't get logged out. The popup/redirect resolver MUST be
       // passed to initializeAuth or Google sign-in (popup + mobile redirect) breaks.
       let auth;
       try{

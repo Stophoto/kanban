@@ -1,7 +1,7 @@
 {
-  "name": "Ben's List",
-  "short_name": "Ben",
-  "description": "Ben's personal replenishment list",
+  "name": "Ben & Kat",
+  "short_name": "Ben & Kat",
+  "description": "Ben & Kat's personal replenishment list",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

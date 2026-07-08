@@ -554,7 +554,30 @@ const DEPT_MAP = {
 const RENAME_MAP = {};
 const ITEM_RECAT = {};
 
-const SEED = [];
+const SEED = [
+  {name:"Bananas", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Apples", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Onions", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Milk", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Eggs", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Butter", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Ground beef", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
+  {name:"Chicken breast", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
+  {name:"Frozen vegetables", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Bread", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Cereal", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Ketchup", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Mustard", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Orange juice", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Toothpaste", store:"grocery", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Shampoo", store:"grocery", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Deodorant", store:"grocery", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Toilet paper", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Paper towels", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Dish soap", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
+  {name:"Laundry detergent", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
+  {name:"Batteries", store:"grocery", routing:"anywhere", dept:"General", detail:""},
+];
 
 // `items` is the in-memory working copy every render function reads from.
 // Firebase mode keeps it in sync via onSnapshot; local mode loads it from localStorage.

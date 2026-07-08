@@ -6,17 +6,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FFFFFF">
-<meta name="apple-mobile-web-app-title" content="Ben's List">
-<meta name="description" content="Ben's personal replenishment list">
+<meta name="apple-mobile-web-app-title" content="Ben &amp; Kat">
+<meta name="description" content="Ben &amp; Kat's personal replenishment list">
 <!-- Link preview (iMessage, social shares) — without these, shared links show no logo. -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="Ben's List">
-<meta property="og:description" content="Ben's private grocery & replenishment list.">
+<meta property="og:title" content="Ben &amp; Kat">
+<meta property="og:description" content="Ben &amp; Kat's private grocery & replenishment list.">
 <meta property="og:image" content="https://stophoto.github.io/kanban/icons/icon-512.png">
 <meta property="og:url" content="https://stophoto.github.io/kanban/ben/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Ben's List">
-<meta name="twitter:description" content="Ben's private grocery & replenishment list.">
+<meta name="twitter:title" content="Ben &amp; Kat">
+<meta name="twitter:description" content="Ben &amp; Kat's private grocery & replenishment list.">
 <meta name="twitter:image" content="https://stophoto.github.io/kanban/icons/icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<title>Ben's List</title>
+<title>Ben &amp; Kat</title>
 <style>
   :root{
     /* Fratello palette */
@@ -375,7 +375,7 @@
 <div class="app">
   <header>
     <div class="h-row">
-      <div class="wordmark">Ben<span class="dot">.</span></div>
+      <div class="wordmark">Ben &amp; Kat<span class="dot">.</span></div>
       <div class="sync" onclick="syncTap()" title="Tap to sign out"><span class="led"></span>SYNCED</div>
     </div>
     <div class="toggle" id="toggle">
@@ -486,8 +486,8 @@
      an allowed account is signed in. The real lock is in firestore.rules. -->
 <div class="authgate" id="authgate" hidden>
   <div class="ag-card">
-    <div class="ag-mark">Ben<span class="dot">.</span></div>
-    <div class="ag-sub" id="agSub">A private list for Ben. Sign in to continue.</div>
+    <div class="ag-mark">Ben &amp; Kat<span class="dot">.</span></div>
+    <div class="ag-sub" id="agSub">A private list for Ben &amp; Kat. Sign in to continue.</div>
     <button class="ag-btn" id="authBtn" onclick="signInGoogle()">Continue with Google</button>
     <div class="ag-note" id="agNote"></div>
   </div>
@@ -554,7 +554,30 @@ const DEPT_MAP = {
 const RENAME_MAP = {};
 const ITEM_RECAT = {};
 
-const SEED = [];
+const SEED = [
+  {name:"Bananas", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Apples", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Onions", store:"grocery", routing:"anywhere", dept:"Produce", detail:""},
+  {name:"Milk", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Eggs", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Butter", store:"grocery", routing:"anywhere", dept:"Dairy", detail:""},
+  {name:"Ground beef", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
+  {name:"Chicken breast", store:"grocery", routing:"anywhere", dept:"Meat", detail:""},
+  {name:"Frozen vegetables", store:"grocery", routing:"anywhere", dept:"Frozen", detail:""},
+  {name:"Bread", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Cereal", store:"grocery", routing:"anywhere", dept:"Breakfast", detail:""},
+  {name:"Ketchup", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Mustard", store:"grocery", routing:"anywhere", dept:"Condiments", detail:""},
+  {name:"Orange juice", store:"grocery", routing:"anywhere", dept:"Beverages", detail:""},
+  {name:"Toothpaste", store:"grocery", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Shampoo", store:"grocery", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Deodorant", store:"grocery", routing:"anywhere", dept:"Toiletries", detail:""},
+  {name:"Toilet paper", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Paper towels", store:"grocery", routing:"anywhere", dept:"Paper", detail:""},
+  {name:"Dish soap", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
+  {name:"Laundry detergent", store:"grocery", routing:"anywhere", dept:"Household", detail:""},
+  {name:"Batteries", store:"grocery", routing:"anywhere", dept:"General", detail:""},
+];
 
 // `items` is the in-memory working copy every render function reads from.
 // Firebase mode keeps it in sync via onSnapshot; local mode loads it from localStorage.
@@ -700,7 +723,7 @@ function stopFirebaseSync(){ if(unsubSnap){ try{ unsubSnap(); }catch(e){} unsubS
 /* ---- access control: only these Google accounts can open the shared list ----
    This is the friendly in-app gate; the REAL enforcement lives in firestore.rules,
    which lists the same emails. To add/remove a person, change BOTH places. */
-const ALLOWED = ['benprefontaine@gmail.com'];
+const ALLOWED = ['benprefontaine@gmail.com','katevers137@gmail.com'];
 
 async function firebaseBoot(){
   const { auth, authFns } = window.PantryFB;
@@ -743,10 +766,10 @@ function showAuthGate(state, email){
   btn.style.visibility='visible'; btn.disabled=false;
   if(state==='denied'){
     sub.textContent='That account isn’t on the list.';
-    note.innerHTML=(email?'<strong>'+esc(email)+'</strong> can’t open this list. ':'')+'Only Ben’s Google account has access.';
+    note.innerHTML=(email?'<strong>'+esc(email)+'</strong> can’t open this list. ':'')+'Only Ben and Kat’s Google accounts have access.';
     btn.innerHTML=googleBtnLabel('Try a different account');
   } else {
-    sub.textContent='A private list for Ben. Sign in to continue.';
+    sub.textContent='A private list for Ben & Kat. Sign in to continue.';
     note.textContent='';
     btn.innerHTML=googleBtnLabel('Continue with Google');
   }
